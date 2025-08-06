@@ -1,0 +1,377 @@
+! This script must be run as root
+./a.bash: line 20: partition: unbound variable
+./a.bash: line 20: partition: unbound variable
+> Configuring time services
+
+
+timedatectl set-timezone Asia/Kolkata
+- Do you want to execute this line (y/n/s/q): 
+
+timedatectl
+- Do you want to execute this line (y/n/s/q): 
+
+hwclock --systohc
+- Do you want to execute this line (y/n/s/q): 
+> Configuring pacman
+
+
+sed -i 's/#Color/Color/; /Color/aILoveCandy' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/#VerbosePkgLists/VerbosePkgLists' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+! WARNING : There might be unfavourable consequences of exiting the script in between.\n! Exiting in 5 seconds.\-\- Press any key to cancel.
+sed: -e expression #1, char 34: unterminated `s' command
+> Configuring time services
+
+timedatectl set-timezone Asia/Kolkata
+- Do you want to execute this line (y/n/s/q): 
+
+timedatectl
+- Do you want to execute this line (y/n/s/q): 
+
+hwclock --systohc
+- Do you want to execute this line (y/n/s/q): 
+> Configuring pacman
+
+sed -i 's/#Color/Color/; /Color/aILoveCandy' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/#VerbosePkgLists/VerbosePkgLists' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/#ParallelDownloads = 5/ParallelDownloads = 4/' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+> Ranking mirrors
+
+reflector --latest 50 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
+- Do you want to execute this line (y/n/s/q): 
+
+cp -f mirrorlist /etc/pacman.d/mirrorlist
+- Do you want to execute this line (y/n/s/q): 
+> Setting up partitions
+
+mkfs.ext4 /dev/nvme0n1p5
+- Do you want to execute this line (y/n/s/q): 
+
+tune2fs -O fast_commit /dev/nvme0n1p5
+- Do you want to execute this line (y/n/s/q): 
+
+mount /dev/nvme0n1p5 /mnt
+- Do you want to execute this line (y/n/s/q): 
+
+mkdir /mnt/efi
+- Do you want to execute this line (y/n/s/q): 
+> Backing up efi
+
+rm -rf efi_backup.img
+- Do you want to execute this line (y/n/s/q): 
+
+dd if='/dev/nvme0n1p1' of='efi_backup.img'
+- Do you want to execute this line (y/n/s/q): 
+
+mount /dev/nvme0n1p1 /mnt/efi
+- Do you want to execute this line (y/n/s/q): 
+> Installing linux
+
+pacman -Sy archlinux-keyring
+- Do you want to execute this line (y/n/s/q): 
+
+pacstrap -K /mnt base linux-lts linux-firmware e2fsprogs sof-firmware networkmanager nano man-db man-pages texinfo base-devel ntfs-3g sudo refind sbsigntools sbctl intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl nvidia nvidia-utils tlp
+- Do you want to execute this line (y/n/s/q): 
+! WARNING : There might be unfavourable consequences of exiting the script in between.\n! Exiting in 5 seconds.\-\- Press any key to cancel.
+> Configuring time services
+
+timedatectl set-timezone Asia/Kolkata
+- Do you want to execute this line (y/n/s/q): 
+! WARNING : There might be unfavourable consequences of exiting the script in between.
+! Exiting in 5 seconds.\-\- Press any key to cancel.
+> Configuring time services
+
+timedatectl set-timezone Asia/Kolkata
+- Do you want to execute this line (y/n/s/q): 
+! WARNING : There might be unfavourable consequences of exiting the script in between.
+! Exiting in 5 seconds...
+Press any key to cancel.
+> Configuring time services
+
+timedatectl set-timezone Asia/Kolkata
+- Do you want to execute this line (y/n/s/q): 
+
+! WARNING : There might be unfavourable consequences of exiting the script in between.
+! Exiting in 5 seconds...
+  Press any key to cancel.
+> Configuring time services
+
+timedatectl set-timezone Asia/Kolkata
+- Do you want to execute this line (y/n/s/q): 
+
+timedatectl
+- Do you want to execute this line (y/n/s/q): 
+               Local time: Sat 2025-09-06 20:11:32 IST
+           Universal time: Sat 2025-09-06 14:41:32 UTC
+                 RTC time: Sat 2025-09-06 14:41:32
+                Time zone: Asia/Kolkata (IST, +0530)
+System clock synchronized: no
+              NTP service: inactive
+          RTC in local TZ: no
+
+hwclock --systohc
+- Do you want to execute this line (y/n/s/q): 
+
+! WARNING : There might be unfavourable consequences of exiting the script in between.
+! Exiting in 5 seconds...
+  Press any key to cancel.
+> Configuring time services
+
+ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+- Do you want to execute this line (y/n/s/q): 
+> Configuring pacman
+
+sed -i 's/#Color/Color/' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/#ParallelDownloads = 5/ParallelDownloads = 4/' /etc/pacman.conf
+- Do you want to execute this line (y/n/s/q): 
+> Setting up locale and keymap
+
+sed -i 's/#en_IN/en_IN/' /etc/locale.gen ; echo 'LANG=en_IN.UTF-8' > /etc/locale.conf ; echo 'KEYMAP=us' > /etc/vconsole.conf ; echo 'FONT=Lat2-Terminus16' >> /etc/vconsole.conf ; locale-gen
+- Do you want to execute this line (y/n/s/q): 
+> Configuring network
+
+systemctl enable NetworkManager
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'net.ipv4.tcp_fastopen = 3' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'net.ipv4.tcp_timestamps = 0' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'tcp_bbr' >> /etc/modules-load.d/modules.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'net.core.default_qdisc = cake' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'net.ipv4.tcp_congestion_control = bbr' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+> Configuring hosts
+
+echo '127.0.0.1 localhost' >> /etc/hosts
+- Do you want to execute this line (y/n/s/q): 
+
+echo '127.0.1.1 AshLeg' >> /etc/hosts
+- Do you want to execute this line (y/n/s/q): 
+
+echo '::1 localhost' >> /etc/hosts
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'AshLeg' > /etc/hostname
+- Do you want to execute this line (y/n/s/q): 
+> Generating initramfs
+
+mkinitcpio -P
+- Do you want to execute this line (y/n/s/q): 
+> Setting up root password and user
+
+passwd
+- Do you want to execute this line (y/n/s/q): 
+
+useradd -m dwizistor
+- Do you want to execute this line (y/n/s/q): 
+
+passwd dwizistor
+- Do you want to execute this line (y/n/s/q): 
+
+usermod -aG ftp games http audio disk storage video wheel dwizistor
+- Do you want to execute this line (y/n/s/q): 
+> Installing bootloader
+
+refind-install --usedefault /dev/nvme0n1p1
+- Do you want to execute this line (y/n/s/q): 
+
+efibootmgr --create --disk /dev/nvme0n1 --part 1 --loader /EFI/boot/bootx64.efi --label 'rEFInd' --verbose
+- Do you want to execute this line (y/n/s/q): 
+> Enable sudo
+
+echo 'Defaults timestamp_timeout = -1' > /etc/sudoers.d/01-alias
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+- Do you want to execute this line (y/n/s/q): 
+> Configuring swap
+
+mkswap -U clear --size 8G --file /swapfile
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'vm.swappiness = 35' >/etc/sysctl.d/910-swap.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'vm.vfs_cache_pressure = 50' >>/etc/sysctl.d/910-swap.conf
+- Do you want to execute this line (y/n/s/q): 
+> Adding perf tweaks
+
+systemctl enable fstrim.timer
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'kernel.core_pattern=|/bin/false' >> /etc/sysctl.d/50-coredump.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'vm.dirty_ratio = 2' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'vm.dirty_background_ratio = 1' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'dev.perf_stream_paranoid=0' >> /etc/sysctl.d/9-custom_sysctl.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/-march=x86-64 -mtune=generic/-march=native -mtune=native/' /etc/makepkg.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/#RUSTFLAGS="-C opt-level=2"/RUSTFLAGS="-C opt-level=2 -C target-cpu=native"/' /etc/makepkg.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/#MAKEFLAGS="-j2"/MAKEFLAGS="-j14"/' /etc/makepkg.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i "s/#BUILDDIR=\/tmp\/makepkg/BUILDDIR=\/tmp\/makepkg/" /etc/makepkg.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i "s/PKGEXT='.pkg.tar.zst'/PKGEXT='.pkg.tar'/" /etc/makepkg.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'options i915 enable_fbc=1' >> /etc/modprobe.d/i915.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'options i915 enable_psr=1' >> /etc/modprobe.d/i915.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i '/^HOOKS=/s/\s*kms\s*//' /etc/mkinitcpio.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i 's/MODULES=()/MODULES=(intel_agp i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm})/' /etc/mkinitcpio.conf
+- Do you want to execute this line (y/n/s/q): 
+
+systemctl enable tlp.service
+- Do you want to execute this line (y/n/s/q): 
+./c.bash: line 41: trg: unbound variable
+./c.bash: line 41: trg: unbound variable
+./c.bash: line 80: esp_path: unbound variable
+> Setting up clock
+
+timedatectl
+- Do you want to execute this line (y/n/s/q): 
+
+sudo hwclock -u -w
+- Do you want to execute this line (y/n/s/q): 
+> Installing dots and packages
+
+sudo yay -Sy envycontrol pamac-aur gufw mpv ast-firmware upd72020x-fw wd719x-firmware aic94xx-firmware linux-firmware-qlogic
+- Do you want to execute this line (y/n/s/q): 
+
+bash <(curl -s https://end-4.github.io/dots-hyprland-wiki/setup.sh)
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/hyprland.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/hyprland.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/hyprland.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo envycontrol -s hybrid --rtd3
+- Do you want to execute this line (y/n/s/q): 
+
+sudo envycontrol --cache-create
+- Do you want to execute this line (y/n/s/q): 
+> Secure boot setup
+
+sudo sbctl create-keys
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sbctl enroll-keys -m
+- Do you want to execute this line (y/n/s/q): 
+
+export ESP_PATH=/efi
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkdir -p /etc/refind.d/keys
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp /var/lib/sbctl/keys/db/db.key /etc/refind.d/keys/refind_local.key
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp /var/lib/sbctl/keys/db/db.pem /etc/refind.d/keys/refind_local.crt
+- Do you want to execute this line (y/n/s/q): 
+
+sudo refind-install --localkeys --usedefault /dev/nvme0n1p1
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'
+- Do you want to execute this line (y/n/s/q): 
+
+export ESP_PATH=/boot
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkinitcpio -P
+- Do you want to execute this line (y/n/s/q): 
+
+echo "[Trigger]
+Operation=Upgrade
+Type=Package
+Target=refind
+
+[Action]
+Description = Updating rEFInd on ESP
+When=PostTransaction
+Exec=/usr/bin/refind-install --usedefault /dev/nvme0n1p1" | sudo tee -a /etc/pacman.d/hooks/refind.hook > /dev/null
+- Do you want to execute this line (y/n/s/q): 
+
+echo "[Trigger]
+Operation=Install
+Operation=Upgrade
+Operation=Remove
+Type=Package
+# You can remove package(s) that don't apply to your config, e.g. if you only use nvidia-open you can remove nvidia-lts as a Target
+Target=nvidia
+Target=nvidia-open
+Target=nvidia-lts
+# If running a different kernel, modify below to match
+Target=linux
+
+[Action]
+Description=Updating NVIDIA module in initcpio
+Depends=mkinitcpio
+When=PostTransaction
+NeedsTargets
+Exec=/bin/sh -c 'while read -r trg; do case $trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null
+- Do you want to execute this line (y/n/s/q): 
+> reFind Theme setup
+
+git clone --depth=1 https://github.com/killign/killign-rEFInd
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp -rf killign-rEFInd /efi/EFI/Boot/
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp -f refind.conf /efi/EFI/Boot/
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkrlconf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sed -i '1s/\(UUID=[^"]*\)"/\1 pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0"/' /boot/refind_linux.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf
+- Do you want to execute this line (y/n/s/q): 
