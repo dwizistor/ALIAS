@@ -70,8 +70,9 @@ commands=(
     "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
     ########################################################
     "> reFind Theme setup"
-    "sudo cp -f Boot/refind.conf /efi/EFI/Boot/"
-    "sudo cp -rf Boot/themes /efi/EFI/Boot/"
+    "git clone --depth=1 https://github.com/killign/killign-rEFInd"
+    "sudo cp -rf killign-rEFInd /efi/EFI/Boot/"
+    "sudo cp -f refind.conf /efi/EFI/Boot/"
     "sudo mkrlconf"
     "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params\"/' /boot/refind_linux.conf"
     "sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf"
