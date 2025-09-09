@@ -69,7 +69,7 @@ commands=(
     "sed -i \"s/PKGEXT='.pkg.tar.zst'/PKGEXT='.pkg.tar'/\" /etc/makepkg.conf"
     "echo 'options i915 enable_fbc=1' >> /etc/modprobe.d/i915.conf"
     "echo 'options i915 enable_psr=1' >> /etc/modprobe.d/i915.conf"
-    "sed -i '/^HOOKS=/s/\s*kms\s*//' /etc/mkinitcpio.conf"
+    "sed -i '/^HOOKS=/s/\s*kms resume\s*//' /etc/mkinitcpio.conf"
     "sed -i 's/MODULES=()/MODULES=(${modules[*]}})/' /etc/mkinitcpio.conf"
     "systemctl enable tlp.service"
 )
