@@ -58,7 +58,7 @@ reflector_sort="rate"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0"
+kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep"
 
 #- Packages
 base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl")
