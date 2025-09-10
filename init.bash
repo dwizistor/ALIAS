@@ -59,19 +59,23 @@ reflector_sort="rate"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-offset=filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}'
-kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
+offset=$(filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
+#kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
+kernel_params="pcie_aspm=force quiet splash mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
 
 #- Packages
 base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl")
-system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia" "nvidia-utils" "tlp")
-other_packages=("envycontrol" "pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic")
+#system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia" "nvidia-utils" "tlp")
+#other_packages=("envycontrol" "pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic")
+system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "tlp")
+other_packages=("pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic")
 
 #- Logging
 log_file="alias-install.log"
 
 #- Modules
-modules=("intel_agp" "i915" "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm")
+#modules=("intel_agp" "i915" "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm")
+modules=("intel_agp" "i915")
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS

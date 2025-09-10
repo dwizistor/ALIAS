@@ -27,7 +27,7 @@ declare -a commands=(
     "sed -i 's/#Color/Color/; /Color/aILoveCandy' /etc/pacman.conf"
     "sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf"
     "sed -i 's/#ParallelDownloads = 5/ParallelDownloads = $paralleldownloads/' /etc/pacman.conf"
-	"sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf"
+    "sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf"
     ########################################################
     "> Ranking mirrors"
     "reflector --latest $reflector_latest --protocol $reflector_protocol --sort $reflector_sort --save /etc/pacman.d/mirrorlist"
@@ -38,7 +38,7 @@ declare -a commands=(
     "tune2fs -O fast_commit $linpart"
     "mount $linpart /mnt"
     "mkdir /mnt/efi"
-	########################################################
+    ########################################################
     "> Backing up efi"
     "rm -rf efi_backup.img"
     "dd if='$efipart' of='efi_backup.img'"
@@ -53,6 +53,7 @@ declare -a commands=(
     ########################################################
     "> Switching to chroot on /mnt"
     "cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist"
+    "cp -f init.bash /mnt/root/init.bash"
     "cp -f b.bash /mnt/root/b.bash"
     "arch-chroot /mnt /bin/bash -c /root/b.bash"
     ########################################################
