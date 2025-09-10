@@ -37,6 +37,7 @@ machine="AshLeg"
 #- Disks
 efipart="/dev/nvme0n1p1"
 linpart="/dev/nvme0n1p5"
+linpartuuid=$(blkid -s UUID -o value $linpart)
 other_partitions=("nvme0n1p6" "nvme0n1p3")
 
 #- System
@@ -59,7 +60,7 @@ reflector_sort="rate"
 #- Bootloader
 disk="/dev/nvme0n1"
 offset=filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}'
-kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep resume=UUID= resume_offset=$offset"
+kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
 
 #- Packages
 base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl")
