@@ -27,5 +27,6 @@ These scripts are for introducing automation to ArchLinux installations while ma
   5. Once logged into your new user, run c.bash to complete the setup.
 
 ## 👽 Future Scope & To-Do List
+- [ ] Nvidia
 - [ ] Disk Encryption
 - [ ] You tell me.
