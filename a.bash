@@ -49,7 +49,10 @@ declare -a commands=(
     "pacstrap -K /mnt ${packages_to_install[*]}"
     ########################################################
     "> Generating fstab"
+    "partmnt"
     "genfstab -U /mnt >/mnt/etc/fstab"
+    "sed -i '1,/relatime/ s/relatime/noatime,commit=60,barrier=0/' /mnt/etc/fstab"
+    "echo -e '# SWAP\n/swapfile none swap defaults 0 0' >>/mnt/etc/fstab"
     ########################################################
     "> Switching to chroot on /mnt"
     "cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist"
@@ -59,12 +62,6 @@ declare -a commands=(
     ########################################################
     "> Configuring TLP"
     "cp -f tlp.conf /mnt/etc/tlp.conf"
-    ########################################################
-    "> Generating fstab"
-    "partmnt"
-    "genfstab -U /mnt >/mnt/etc/fstab"
-    "sed -i '1,/relatime/ s/relatime/noatime,commit=60,barrier=0/' /mnt/etc/fstab"
-    "echo -e '# SWAP\n/swapfile none swap defaults 0 0' >>/mnt/etc/fstab"
     ########################################################
     "> Finished!"
 )
