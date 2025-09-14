@@ -14,6 +14,7 @@ packages_to_install+=(${other_packages[@]})
 offset=$(filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
 linpartuuid=$(blkid -s UUID -o value $linpart)
 hiber="resume=UUID=$linpartuuid resume_offset=$offset"
+wall="/home/dwizistor/drives/Files/_dotfiles/Wallpaper.png"
 
 rfhook="[Trigger]
 Operation=Upgrade
@@ -74,6 +75,9 @@ commands=(
     "yay -Sy ${packages_to_install[*]}"
     "sudo systemctl enable sddm"
     "git clone -b main --depth=1 https://github.com/uiriansan/SilentSDDM && cd SilentSDDM && ./install.sh"
+    "sudo cp -f $wall /usr/share/sddm/themes/silent/backgrounds/smoky.jpg"
+    "sed -i '0,/scale = 1.0/s/scale = 1.0/scale = 1.5/' /usr/share/sddm/themes/silent/configs/default.conf"
+    "sed -i 's/blur = [0-9]\+/blur = 100/g' /usr/share/sddm/themes/silent/configs/default.conf"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
