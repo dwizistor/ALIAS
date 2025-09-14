@@ -15,7 +15,6 @@ offset=$(filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2
 linpartuuid=$(blkid -s UUID -o value $linpart)
 hiber="resume=UUID=$linpartuuid resume_offset=$offset"
 
-
 rfhook="[Trigger]
 Operation=Upgrade
 Type=Package
@@ -44,6 +43,26 @@ Depends=mkinitcpio
 When=PostTransaction
 NeedsTargets
 Exec=/bin/sh -c 'while read -r trg; do case \$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
+
+refreshrules='# Rule for when switching to battery
+ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="0", RUN+="/usr/bin/ChangeRefreshRate.sh 60 &>/dev/null --machine=target_user@.host"
+# Rule for when switching to AC
+ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="1", RUN+="/usr/bin/ChangeRefreshRate.sh 144 &>/dev/null --machine=target_user@.host"'
+
+refreshscript='#!/usr/bin/env bash
+
+MON="eDP-1"
+RES="1920x1080"
+SCA=1
+
+for dir in /run/user/*; do
+  for hypr_dir in "$dir/hypr/"*/; do
+    socket="${hypr_dir}.socket.sock"
+    if [[ -S $socket ]]; then
+      echo -e "keyword monitor $MON,$RES@$1,0x0,$SCA" | socat - UNIX-CONNECT:"$socket"
+    fi
+  done
+done'
 
 commands=(
     "> Setting up clock"
@@ -88,6 +107,10 @@ commands=(
     "> Git config"
     "git config --global user.name \"$gitname\""
     "git config --global user.email \"$gitemail\""
+    ########################################################
+    "> Auto refreshrate switch udev rule"
+    "echo \'$refreshrules\' | sudo tee -a /etc/udev/rules.d/99-ChangeRefreshRate.rules"
+    "echo \'$refreshscript\' | sudo tee -a /usr/bin/ChangeRefreshRate.sh"
     ########################################################
 )
 
