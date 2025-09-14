@@ -11,6 +11,11 @@ exec > >(tee -a "$log_file") 2>&1
 packages_to_install=()
 packages_to_install+=(${other_packages[@]})
 
+offset=$(filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
+linpartuuid=$(blkid -s UUID -o value $linpart)
+hiber="resume=UUID=$linpartuuid resume_offset=$offset"
+
+
 rfhook="[Trigger]
 Operation=Upgrade
 Type=Package
@@ -46,8 +51,10 @@ commands=(
     "sudo hwclock -u -w"
     ########################################################
     "> Installing dots and packages"
-    "sudo yay -Sy ${packages_to_install[*]}"
     "bash <(curl -s "https://end-4.github.io/dots-hyprland-wiki/setup.sh")"
+    "yay -Sy ${packages_to_install[*]}"
+    "sudo systemctl enable sddm"
+    "git clone -b main --depth=1 https://github.com/uiriansan/SilentSDDM && cd SilentSDDM && ./install.sh"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
@@ -71,10 +78,11 @@ commands=(
     ########################################################
     "> reFind Theme setup"
     "git clone --depth=1 https://github.com/killign/killign-rEFInd"
-    "sudo cp -rf killign-rEFInd /efi/EFI/Boot/"
+    "sudo mkdir -p /efi/EFI/Boot/themes"
+    "sudo cp -rf killign-rEFInd /efi/EFI/Boot/themes/"
     "sudo cp -f refind.conf /efi/EFI/Boot/"
     "sudo mkrlconf"
-    "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params\"/' /boot/refind_linux.conf"
+    "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params $hiber\"/' /boot/refind_linux.conf"
     "sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf"
     ########################################################
 )

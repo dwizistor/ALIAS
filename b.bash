@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source init.bash
+source /root/init.bash
 
 exec > >(tee -a "$log_file") 2>&1
 
@@ -41,7 +41,7 @@ commands=(
     "passwd"
     "useradd -m $user"
     "passwd $user"
-    "usermod -aG ${groups[*]} $user"
+    "usermod -aG $groups $user"
     ########################################################
     "> Installing bootloader"
     "refind-install --usedefault $efipart"
@@ -70,7 +70,7 @@ commands=(
     "echo 'options i915 enable_fbc=1' >> /etc/modprobe.d/i915.conf"
     "echo 'options i915 enable_psr=1' >> /etc/modprobe.d/i915.conf"
     "sed -i '/^HOOKS=/s/\s*kms resume\s*//' /etc/mkinitcpio.conf"
-    "sed -i 's/MODULES=()/MODULES=(${modules[*]}})/' /etc/mkinitcpio.conf"
+    "sed -i 's/MODULES=()/MODULES=(${modules[*]})/' /etc/mkinitcpio.conf"
     "systemctl enable tlp.service"
 )
 

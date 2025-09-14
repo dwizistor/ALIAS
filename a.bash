@@ -30,7 +30,7 @@ declare -a commands=(
     "sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf"
     ########################################################
     "> Ranking mirrors"
-    "reflector --latest $reflector_latest --protocol $reflector_protocol --sort $reflector_sort --save /etc/pacman.d/mirrorlist"
+    "reflector --latest $reflector_latest --protocol $reflector_protocol --sort $reflector_sort --save /etc/pacman.d/mirrorlist" #skip if you want an already existing mirrorlist file to be used in next command
     "cp -f mirrorlist /etc/pacman.d/mirrorlist"
     ########################################################
     "> Setting up partitions"
@@ -49,16 +49,19 @@ declare -a commands=(
     "pacstrap -K /mnt ${packages_to_install[*]}"
     ########################################################
     "> Generating fstab"
-    "partmnt"
     "genfstab -U /mnt >/mnt/etc/fstab"
-    "sed -i '1,/relatime/ s/relatime/noatime,commit=60,barrier=0/' /mnt/etc/fstab"
-    "echo -e '# SWAP\n/swapfile none swap defaults 0 0' >>/mnt/etc/fstab"
     ########################################################
     "> Switching to chroot on /mnt"
     "cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist"
     "cp -f init.bash /mnt/root/init.bash"
     "cp -f b.bash /mnt/root/b.bash"
     "arch-chroot /mnt /bin/bash -c /root/b.bash"
+    ########################################################
+    "> Generating fstab"
+    "partmnt"
+    "genfstab -U /mnt >/mnt/etc/fstab"
+    "sed -i '1,/relatime/ s/relatime/noatime,commit=60,barrier=0/' /mnt/etc/fstab"
+    "echo -e '# SWAP\n/swapfile none swap defaults 0 0' >>/mnt/etc/fstab"
     ########################################################
     "> Configuring TLP"
     "cp -f tlp.conf /mnt/etc/tlp.conf"
@@ -74,6 +77,7 @@ partmnt() {
     chmod -R 0765 /mnt/home/$user/drives
     for i in "${other_partitions[@]}"; do
         label=$(blkid -s LABEL /dev/$i | grep -Eo '"..*"' | sed 's/"//g')
+        : ${label:="$i"}
         mkdir -p /mnt/home/$user/drives/$label
         mount -w /dev/$i /mnt/home/$user/drives/$label
     done

@@ -37,7 +37,6 @@ machine="AshLeg"
 #- Disks
 efipart="/dev/nvme0n1p1"
 linpart="/dev/nvme0n1p5"
-linpartuuid=$(blkid -s UUID -o value $linpart)
 other_partitions=("nvme0n1p6" "nvme0n1p3")
 
 #- System
@@ -46,7 +45,7 @@ locale="en_IN"
 lang="$locale.UTF-8"
 keymap="us"
 font="Lat2-Terminus16"
-groups=("ftp" "games" "http" "audio" "disk" "storage" "video" "wheel")
+groups="ftp,games,http,audio,disk,storage,video,wheel"
 swap_size="8G"
 swappiness="35"
 vfs_cache_pressure="50"
@@ -59,16 +58,15 @@ reflector_sort="rate"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-offset=$(filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
 #kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
-kernel_params="pcie_aspm=force quiet splash mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
+kernel_params="pcie_aspm=force quiet splash mem_sleep_default=deep"
 
 #- Packages
-base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl")
+base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git")
 #system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia" "nvidia-utils" "tlp")
 #other_packages=("envycontrol" "pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic")
 system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "tlp")
-other_packages=("pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic")
+other_packages=("pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic" "zed" "zen-browser-bin ark sddm")
 
 #- Logging
 log_file="alias-install.log"
