@@ -85,6 +85,10 @@ commands=(
     "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params $hiber\"/' /boot/refind_linux.conf"
     "sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf"
     ########################################################
+    "> Git config"
+    "git config --global user.name \"$gitname\""
+    "git config --global user.email \"$gitemail\""
+    ########################################################
 )
 
 for command in "${commands[@]}"; do

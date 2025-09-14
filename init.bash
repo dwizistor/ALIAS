@@ -33,6 +33,8 @@ EOF
 #- User
 user="dwizistor"
 machine="AshLeg"
+gitname="Avinash Dwivedi"
+gitemail="141247046+dwizistor@users.noreply.github.com"
 
 #- Disks
 efipart="/dev/nvme0n1p1"
