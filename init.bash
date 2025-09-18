@@ -60,14 +60,11 @@ reflector_sort="rate"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-#kernel_params="pcie_aspm=force quiet splash NVreg_EnableGpuFirmware=0 mem_sleep_default=deep resume=UUID=$linpartuuid resume_offset=$offset"
 kernel_params="pcie_aspm=force quiet splash mem_sleep_default=deep"
 
 #- Packages
 base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git")
-#system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia" "nvidia-utils" "tlp")
-#other_packages=("envycontrol" "pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic")
-system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "tlp")
+system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia" "nvidia-utils" "vulkan-mesa-layers" "tlp")
 other_packages=("pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic" "zed" "zen-browser-bin ark sddm")
 
 #- Logging

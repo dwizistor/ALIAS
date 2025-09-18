@@ -45,6 +45,13 @@ When=PostTransaction
 NeedsTargets
 Exec=/bin/sh -c 'while read -r trg; do case \$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
 
+sdwl='[General]
+DisplayServer=wayland
+GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+
+[Wayland]
+CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1'
+
 refreshrules='# Rule for when switching to battery
 ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="0", RUN+="/usr/bin/ChangeRefreshRate.sh 60 &>/dev/null --machine=target_user@.host"
 # Rule for when switching to AC
@@ -76,13 +83,13 @@ commands=(
     "sudo systemctl enable sddm"
     "git clone -b main --depth=1 https://github.com/uiriansan/SilentSDDM && cd SilentSDDM && ./install.sh"
     "sudo cp -f $wall /usr/share/sddm/themes/silent/backgrounds/smoky.jpg"
+    "echo $sdwl >>/etc/sddm.conf.d/10-wayland.conf"
+    "yay -S nvidia-prime nvidia-prime-rtd3pm"
     "sed -i '0,/scale = 1.0/s/scale = 1.0/scale = 1.5/' /usr/share/sddm/themes/silent/configs/default.conf"
     "sed -i 's/blur = [0-9]\+/blur = 100/g' /usr/share/sddm/themes/silent/configs/default.conf"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
-#    "sudo envycontrol -s hybrid --rtd3"
-#    "sudo envycontrol --cache-create"
     ########################################################
     "> Secure boot setup"
     "sudo sbctl create-keys"
@@ -97,7 +104,7 @@ commands=(
     "sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'"
     "sudo mkinitcpio -P"
     "echo \"$rfhook\" | sudo tee -a /etc/pacman.d/hooks/refind.hook > /dev/null"
-#    "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
+    "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
     ########################################################
     "> reFind Theme setup"
     "git clone --depth=1 https://github.com/killign/killign-rEFInd"
