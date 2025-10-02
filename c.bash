@@ -45,12 +45,13 @@ When=PostTransaction
 NeedsTargets
 Exec=/bin/sh -c 'while read -r trg; do case \$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
 
-sdwl='[General]
-DisplayServer=wayland
-GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+nvrules='# Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
 
-[Wayland]
-CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1'
+# Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"'
 
 refreshrules='# Rule for when switching to battery
 ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="0", RUN+="/usr/bin/ChangeRefreshRate.sh 60 &>/dev/null --machine=target_user@.host"
@@ -72,6 +73,11 @@ for dir in /run/user/*; do
   done
 done'
 
+autolog="[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --noreset --noclear --autologin $user - \${TERM}
+Environment=XDG_SESSION_TYPE=wayland"
+
 commands=(
     "> Setting up clock"
     "timedatectl"
@@ -80,16 +86,15 @@ commands=(
     "> Installing dots and packages"
     "bash <(curl -s "https://end-4.github.io/dots-hyprland-wiki/setup.sh")"
     "yay -Sy ${packages_to_install[*]}"
-    "sudo systemctl enable sddm"
-    "git clone -b main --depth=1 https://github.com/uiriansan/SilentSDDM && cd SilentSDDM && ./install.sh"
-    "sudo cp -f $wall /usr/share/sddm/themes/silent/backgrounds/smoky.jpg"
-    "echo $sdwl >>/etc/sddm.conf.d/10-wayland.conf"
-    "yay -S nvidia-prime nvidia-prime-rtd3pm"
-    "sed -i '0,/scale = 1.0/s/scale = 1.0/scale = 1.5/' /usr/share/sddm/themes/silent/configs/default.conf"
-    "sed -i 's/blur = [0-9]\+/blur = 100/g' /usr/share/sddm/themes/silent/configs/default.conf"
+    "echo \'$nvrules\' | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
+    "echo \"options nvidia \"NVreg_DynamicPowerManagement=0x03\"\" | sudo tee -a /etc/modprobe.d/nvidia-pm.conf"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
+    "echo 'env = AQ_DRM_DEVICES,/dev/dri/card1' >> ~/.config/hypr/custom/env.conf"
+    "sudo mkdir -p /etc/systemd/system/getty@tty1.service.d"
+    "echo \'$autolog\' | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf"
+    "echo \"source ~/.config/zshrc.d/auto-Hypr.sh\" | tee -a ~/.bashrc"
     ########################################################
     "> Secure boot setup"
     "sudo sbctl create-keys"
