@@ -95,6 +95,7 @@ commands=(
     "sudo mkdir -p /etc/systemd/system/getty@tty1.service.d"
     "echo \'$autolog\' | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf"
     "echo \"source ~/.config/zshrc.d/auto-Hypr.sh\" | tee -a ~/.bashrc"
+    "sudo systemctl enable --now fstrim.timer"
     ########################################################
     "> Secure boot setup"
     "sudo sbctl create-keys"
