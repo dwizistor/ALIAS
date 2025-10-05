@@ -60,18 +60,17 @@ reflector_sort="rate"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-kernel_params="pcie_aspm=force quiet splash mem_sleep_default=deep"
+kernel_params="pcie_aspm=force mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog"
 
 #- Packages
 base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git")
-system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia" "nvidia-utils" "nvidia-prime" "vulkan-mesa-layers" "tlp")
-other_packages=("pamac-aur" "gufw" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic" "zed" "zen-browser-bin ark")
+system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia-lts" "nvidia-utils" "nvidia-prime" "vulkan-mesa-layers" "ethtool smartmontools")
+other_packages=("pamac-aur" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic" "zed" "zen-browser-bin" "ark" "zswap-disable-writeback" "socat" "speech-dispatcher" "pipewire pipewire-pulse pavucontrol pipewire-audio" "xorg-xhost" "polkit-gnome")
 
 #- Logging
 log_file="alias-install.log"
 
 #- Modules
-#modules=("intel_agp" "i915" "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm")
 modules=("intel_agp" "i915")
 
 # -----------------------------------------------------------------------------

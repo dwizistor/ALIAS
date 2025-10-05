@@ -9,10 +9,10 @@
 ### 🤔 What are these scripts?
 These scripts are for introducing automation to ArchLinux installations while maintaining a granular control over the components. It also helped me with getting a deeper understanding of operating systems.
 
-### 🪓 What does the each script do?
-  - a.bash: Initial setup from the live ISO (partitioning, pacstrap, etc.).
-  - b.bash: System configuration from within the arch-chroot environment.
-  - c.bash: Post-reboot customization and user-space setup (desktop environment, applications, etc.).
+### 🪓 What does the script do?
+  - In Live Boot: Initial setup from the live ISO (partitioning, pacstrap, etc.).
+  - In chroot: System configuration from within the arch-chroot environment.
+  - In normal booted: Post-reboot customization and user-space setup (desktop environment, applications, etc.).
 
 ## 🛠️ Installation
 ### 🧠 Prerequisites
@@ -27,6 +27,6 @@ These scripts are for introducing automation to ArchLinux installations while ma
   5. Once logged into your new user, run c.bash to complete the setup.
 
 ## 👽 Future Scope & To-Do List
-- [ ] Nvidia
+- [x] Nvidia
 - [ ] Disk Encryption
 - [ ] You tell me.

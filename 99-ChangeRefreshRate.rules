@@ -1,0 +1,4 @@
+# Rule for when switching to battery
+ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="0", RUN+="/usr/bin/ChangeRefreshRate.sh 60 &>/dev/null --machine=target_user@.host"
+# Rule for when switching to AC
+ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="1", RUN+="/usr/bin/ChangeRefreshRate.sh 144 &>/dev/null --machine=target_user@.host"
