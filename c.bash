@@ -87,7 +87,6 @@ commands=(
     "bash <(curl -s "https://end-4.github.io/dots-hyprland-wiki/setup.sh")"
     "yay -Sy ${packages_to_install[*]}"
     "echo \'$nvrules\' | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
-    "echo \"options nvidia \"NVreg_DynamicPowerManagement=0x03\"\" | sudo tee -a /etc/modprobe.d/nvidia-pm.conf"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
@@ -128,6 +127,15 @@ commands=(
     "> Auto refreshrate switch udev rule"
     "echo \'$refreshrules\' | sudo tee -a /etc/udev/rules.d/99-ChangeRefreshRate.rules"
     "echo \'$refreshscript\' | sudo tee -a /usr/bin/ChangeRefreshRate.sh"
+    ########################################################
+    "> Enable nvidia services"
+    "sudo systemctl enable nvidia-suspend.service"
+    "sudo systemctl enable nvidia-resume.service"
+    "sudo systemctl enable nvidia-hibernate.service"
+    "sudo systemctl enable nvidia-powerd"
+    "echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
+    "echo 'options nvidia NVreg_TemporaryFilePath=/var/tmp' | sudo tee -a /etc/modprobe.d/nvi.conf"
+    "echo 'options nvidia \"NVreg_DynamicPowerManagement=0x03\"' | sudo tee -a /etc/modprobe.d/nvi.conf"
     ########################################################
 )
 
