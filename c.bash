@@ -84,7 +84,7 @@ commands=(
     "sudo hwclock -u -w"
     ########################################################
     "> Installing dots and packages"
-    "bash <(curl -s "https://end-4.github.io/dots-hyprland-wiki/setup.sh")"
+    "bash <(curl -s \"https://end-4.github.io/dots-hyprland-wiki/setup.sh\")"
     "yay -Sy ${packages_to_install[*]}"
     "echo \'$nvrules\' | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
