@@ -13,10 +13,6 @@ commands=(
     "> Configuring time services"
     "ln -sf /usr/share/zoneinfo/$timezone /etc/localtime"
     ########################################################
-    "> Configuring pacman"
-    "sed -i 's/#Color/Color/' /etc/pacman.conf"
-    "sed -i 's/#ParallelDownloads = 5/ParallelDownloads = $paralleldownloads/' /etc/pacman.conf"
-    ########################################################
     "> Setting up locale and keymap"
     "sed -i 's/#$locale/$locale/' /etc/locale.gen ; echo 'LANG=$lang' > /etc/locale.conf ; echo 'KEYMAP=$keymap' > /etc/vconsole.conf ; echo 'FONT=$font' >> /etc/vconsole.conf ; locale-gen"
     ########################################################
@@ -59,6 +55,7 @@ commands=(
     "> Adding perf tweaks"
     "systemctl enable fstrim.timer"
     "echo 'kernel.core_pattern=|/bin/false' >> /etc/sysctl.d/50-coredump.conf"
+    "echo 'vm.dirty_writeback_centisecs = 1500' >> /etc/sysctl.d/9-custom_sysctl.conf"
     "echo 'vm.dirty_ratio = 2' >> /etc/sysctl.d/9-custom_sysctl.conf"
     "echo 'vm.dirty_background_ratio = 1' >> /etc/sysctl.d/9-custom_sysctl.conf"
     "echo 'dev.perf_stream_paranoid=0' >> /etc/sysctl.d/9-custom_sysctl.conf"
@@ -70,8 +67,8 @@ commands=(
     "echo 'options i915 enable_fbc=1' >> /etc/modprobe.d/i915.conf"
     "echo 'options i915 enable_psr=1' >> /etc/modprobe.d/i915.conf"
     "sed -i '/^HOOKS=/s/kms/systemd/' /etc/mkinitcpio.conf"
+    "sed -i '/^HOOKS=/s/fsck/sd-vconsole/' /etc/mkinitcpio.conf"
     "sed -i 's/MODULES=()/MODULES=(${modules[*]})/' /etc/mkinitcpio.conf"
-    "systemctl enable tlp.service"
 )
 
 for command in "${commands[@]}"; do

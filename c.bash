@@ -11,7 +11,7 @@ exec > >(tee -a "$log_file") 2>&1
 packages_to_install=()
 packages_to_install+=(${other_packages[@]})
 
-offset=$(filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
+offset=$(sudo filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
 linpartuuid=$(blkid -s UUID -o value $linpart)
 hiber="resume=UUID=$linpartuuid resume_offset=$offset"
 wall="/home/dwizistor/drives/Files/_dotfiles/Wallpaper.png"
@@ -43,7 +43,7 @@ Description=Updating NVIDIA module in initcpio
 Depends=mkinitcpio
 When=PostTransaction
 NeedsTargets
-Exec=/bin/sh -c 'while read -r trg; do case \$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
+Exec=/bin/sh -c 'while read -r trg; do case \\\$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
 
 nvrules='# Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
 ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
@@ -53,30 +53,7 @@ ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200
 ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
 ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"'
 
-refreshrules='# Rule for when switching to battery
-ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="0", RUN+="/usr/bin/ChangeRefreshRate.sh 60 &>/dev/null --machine=target_user@.host"
-# Rule for when switching to AC
-ACTION=="change", SUBSYSTEM=="power_supply", ATTRS{type}=="Mains", ATTRS{online}=="1", RUN+="/usr/bin/ChangeRefreshRate.sh 144 &>/dev/null --machine=target_user@.host"'
-
-refreshscript='#!/usr/bin/env bash
-
-MON="eDP-1"
-RES="1920x1080"
-SCA=1
-
-for dir in /run/user/*; do
-  for hypr_dir in "$dir/hypr/"*/; do
-    socket="${hypr_dir}.socket.sock"
-    if [[ -S $socket ]]; then
-      echo -e "keyword monitor $MON,$RES@$1,0x0,$SCA" | socat - UNIX-CONNECT:"$socket"
-    fi
-  done
-done'
-
-autolog="[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --noreset --noclear --autologin $user - \${TERM}
-Environment=XDG_SESSION_TYPE=wayland"
+autolog=""
 
 commands=(
     "> Setting up clock"
@@ -84,17 +61,33 @@ commands=(
     "sudo hwclock -u -w"
     ########################################################
     "> Installing dots and packages"
-    "bash <(curl -s "https://end-4.github.io/dots-hyprland-wiki/setup.sh")"
+    "git clone https://github.com/caelestia-dots/caelestia.git ~/.local/share/caelestia"
+    "fish ~/.local/share/caelestia/install.fish --aur-helper=yay --zen"
     "yay -Sy ${packages_to_install[*]}"
-    "echo \'$nvrules\' | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
+    "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
     "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
     "echo 'env = AQ_DRM_DEVICES,/dev/dri/card1' >> ~/.config/hypr/custom/env.conf"
     "sudo mkdir -p /etc/systemd/system/getty@tty1.service.d"
-    "echo \'$autolog\' | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf"
-    "echo \"source ~/.config/zshrc.d/auto-Hypr.sh\" | tee -a ~/.bashrc"
+    "sudo cp -f autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf"
+    "cp -f uwsm-hypr.fish ~/.config/fish/uwsm-hypr.fish"
+    "echo \"source ~/.config/fish/uwsm-hypr.fish\" | tee -a ~/.config/fish/config.fish"
     "sudo systemctl enable --now fstrim.timer"
+    "touch ~/.hushlogin"
+    "cp -f hypr-user.conf ~/.config/caelestia/hypr-user.conf"
+    "cp -f shell.json ~/.config/caelestia/shell.json"
+    "xhost si:localuser:root"
+    "yay -Rdd 'power-profiles-daemon'"
+    "yay -Syu tlp"
+    "systemctl enable tlp.service"
+    ########################################################
+    "> Bluetooth"
+    "yay -Syu bluez bluez-utils"
+    "sudo systemctl enable bluetooth"
+    "rfkill unblock bluetooth"
+    "mkdir -p ~/.config/wireplumber/wireplumber.conf.d"
+    "cp 10-disable-camera.conf ~/.config/wireplumber/wireplumber.conf.d/10-disable-camera.conf"
     ########################################################
     "> Secure boot setup"
     "sudo sbctl create-keys"
@@ -112,9 +105,11 @@ commands=(
     "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
     ########################################################
     "> reFind Theme setup"
-    "git clone --depth=1 https://github.com/killign/killign-rEFInd"
+    "git clone --depth=1 https://github.com/AdityaGarg8/rEFInd-minimal-modded"
+    "sed -i '/showtools shutdown/d' rEFInd-minimal-modded/theme.conf"
+    "sudo rm -rf /efi/EFI/Boot/themes/*"
     "sudo mkdir -p /efi/EFI/Boot/themes"
-    "sudo cp -rf killign-rEFInd /efi/EFI/Boot/themes/"
+    "sudo cp -rf rEFInd-minimal-modded /efi/EFI/Boot/themes/rEFInd-minimal"
     "sudo cp -f refind.conf /efi/EFI/Boot/"
     "sudo mkrlconf"
     "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params $hiber\"/' /boot/refind_linux.conf"
@@ -125,8 +120,9 @@ commands=(
     "git config --global user.email \"$gitemail\""
     ########################################################
     "> Auto refreshrate switch udev rule"
-    "echo \'$refreshrules\' | sudo tee -a /etc/udev/rules.d/99-ChangeRefreshRate.rules"
-    "echo \'$refreshscript\' | sudo tee -a /usr/bin/ChangeRefreshRate.sh"
+    "sudo cp -f 99-ChangeRefreshRate.rules /etc/udev/rules.d/99-ChangeRefreshRate.rules"
+    "sudo cp -f ChangeRefreshRate.sh /usr/bin/ChangeRefreshRate.sh"
+    "sudo chmod +x /usr/bin/ChangeRefreshRate.sh"
     ########################################################
     "> Enable nvidia services"
     "sudo systemctl enable nvidia-suspend.service"

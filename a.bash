@@ -53,6 +53,7 @@ declare -a commands=(
     ########################################################
     "> Switching to chroot on /mnt"
     "cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist"
+    "cp -f /etc/pacman.conf /mnt/etc/pacman.conf"
     "cp -f init.bash /mnt/root/init.bash"
     "cp -f b.bash /mnt/root/b.bash"
     "arch-chroot /mnt /bin/bash -c /root/b.bash"

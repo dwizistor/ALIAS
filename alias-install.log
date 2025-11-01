@@ -1,0 +1,213 @@
+> Setting up clock
+
+timedatectl
+- Do you want to execute this line (y/n/s/q): 
+
+sudo hwclock -u -w
+- Do you want to execute this line (y/n/s/q): 
+> Installing dots and packages
+
+git clone https://github.com/caelestia-dots/caelestia.git ~/.local/share/caelestia
+- Do you want to execute this line (y/n/s/q): 
+
+fish ~/.local/share/caelestia/install.fish
+- Do you want to execute this line (y/n/s/q): 
+
+yay -Sy pamac-aur gufw mpv ast-firmware upd72020x-fw wd719x-firmware aic94xx-firmware linux-firmware-qlogic zed zen-browser-bin ark zswap-disable-writeback socat speech-dispatcher pipewire pipewire-pulse pavucontrol pipewire-audio
+- Do you want to execute this line (y/n/s/q): 
+
+echo "# Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+
+# Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'env = AQ_DRM_DEVICES,/dev/dri/card1' >> ~/.config/hypr/custom/env.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp -f autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf
+- Do you want to execute this line (y/n/s/q): 
+
+cp -f uwsm-hypr.fish ~/.config/fish/uwsm-hypr.fish
+- Do you want to execute this line (y/n/s/q): 
+
+echo "source ~/.config/fish/uwsm-hypr.fish" | tee -a ~/.config/fish/config.fish
+- Do you want to execute this line (y/n/s/q): 
+
+sudo systemctl enable --now fstrim.timer
+- Do you want to execute this line (y/n/s/q): 
+> Bluetooth
+
+yay -Syu bluez bluez-utils
+- Do you want to execute this line (y/n/s/q): 
+
+sudo systemctl enable bluetooth
+- Do you want to execute this line (y/n/s/q): 
+
+rfkill unblock bluetooth
+- Do you want to execute this line (y/n/s/q): 
+
+mkdir -p ~/.config/wireplumber/wireplumber.conf.d
+- Do you want to execute this line (y/n/s/q): 
+
+cp 10-disable-camera.conf ~/.config/wireplumber/wireplumber.conf.d/10-disable-camera.conf
+- Do you want to execute this line (y/n/s/q): 
+
+amixer sset Master unmute
+- Do you want to execute this line (y/n/s/q): 
+
+⌂
+- Do you want to execute this line (y/n/s/q): 
+
+21:19
+- Do you want to execute this line (y/n/s/q): 
+
+amixer sset Speaker unmute
+- Do you want to execute this line (y/n/s/q): 
+
+amixer sset Headphone unmute
+- Do you want to execute this line (y/n/s/q): 
+> Secure boot setup
+
+sudo sbctl create-keys
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sbctl enroll-keys -m
+- Do you want to execute this line (y/n/s/q): 
+
+export ESP_PATH=/efi
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkdir -p /etc/refind.d/keys
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp /var/lib/sbctl/keys/db/db.key /etc/refind.d/keys/refind_local.key
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp /var/lib/sbctl/keys/db/db.pem /etc/refind.d/keys/refind_local.crt
+- Do you want to execute this line (y/n/s/q): 
+
+sudo refind-install --localkeys --usedefault /dev/nvme0n1p1
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'
+- Do you want to execute this line (y/n/s/q): 
+
+export ESP_PATH=/boot
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkinitcpio -P
+- Do you want to execute this line (y/n/s/q): 
+
+echo "[Trigger]
+Operation=Upgrade
+Type=Package
+Target=refind
+
+[Action]
+Description = Updating rEFInd on ESP
+When=PostTransaction
+Exec=/usr/bin/refind-install --usedefault /dev/nvme0n1p1" | sudo tee -a /etc/pacman.d/hooks/refind.hook > /dev/null
+- Do you want to execute this line (y/n/s/q): 
+
+echo "[Trigger]
+Operation=Install
+Operation=Upgrade
+Operation=Remove
+Type=Package
+# You can remove package(s) that don't apply to your config, e.g. if you only use nvidia-open you can remove nvidia-lts as a Target
+Target=nvidia
+Target=nvidia-open
+Target=nvidia-lts
+# If running a different kernel, modify below to match
+Target=linux
+
+[Action]
+Description=Updating NVIDIA module in initcpio
+Depends=mkinitcpio
+When=PostTransaction
+NeedsTargets
+Exec=/bin/sh -c 'while read -r trg; do case \$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null
+- Do you want to execute this line (y/n/s/q): 
+> reFind Theme setup
+
+git clone --depth=1 https://github.com/AdityaGarg8/rEFInd-minimal-modded
+- Do you want to execute this line (y/n/s/q): 
+
+sed -i '/showtools shutdown/d' rEFInd-minimal-modded/theme.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo rm -rf /efi/EFI/Boot/themes/*
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkdir -p /efi/EFI/Boot/themes
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp -rf rEFInd-minimal-modded /efi/EFI/Boot/themes/rEFInd-minimal
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp -f refind.conf /efi/EFI/Boot/
+- Do you want to execute this line (y/n/s/q): 
+
+sudo mkrlconf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sed -i '1s/\(UUID=[^"]*\)"/\1 pcie_aspm=force quiet mem_sleep_default=deep resume=UUID=71c73696-2556-4b04-9270-f9e147428aa4 resume_offset=2766848"/' /boot/refind_linux.conf
+- Do you want to execute this line (y/n/s/q): 
+
+sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf
+- Do you want to execute this line (y/n/s/q): 
+> Git config
+
+git config --global user.name "Avinash Dwivedi"
+- Do you want to execute this line (y/n/s/q): 
+
+git config --global user.email "141247046+dwizistor@users.noreply.github.com"
+- Do you want to execute this line (y/n/s/q): 
+> Auto refreshrate switch udev rule
+
+sudo cp -f 99-ChangeRefreshRate.rules /etc/udev/rules.d/99-ChangeRefreshRate.rules
+- Do you want to execute this line (y/n/s/q): 
+
+sudo cp -f ChangeRefreshRate.sh /usr/bin/ChangeRefreshRate.sh
+- Do you want to execute this line (y/n/s/q): 
+> Enable nvidia services
+
+sudo systemctl enable nvidia-suspend.service
+- Do you want to execute this line (y/n/s/q): 
+
+sudo systemctl enable nvidia-resume.service
+- Do you want to execute this line (y/n/s/q): 
+
+sudo systemctl enable nvidia-hibernate.service
+- Do you want to execute this line (y/n/s/q): 
+
+sudo systemctl enable nvidia-powerd
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' | sudo tee -a /etc/modprobe.d/nvi.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'options nvidia NVreg_TemporaryFilePath=/var/tmp' | sudo tee -a /etc/modprobe.d/nvi.conf
+- Do you want to execute this line (y/n/s/q): 
+
+echo 'options nvidia "NVreg_DynamicPowerManagement=0x03"' | sudo tee -a /etc/modprobe.d/nvi.conf
+- Do you want to execute this line (y/n/s/q): 
