@@ -60,7 +60,7 @@ vfs_cache_pressure="50"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-kernel_params="pcie_aspm=force mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog"
+kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog"
 
 #- Packages
 base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git")
@@ -76,29 +76,27 @@ modules=("intel_agp i915")
 
 # This function will confirm the user for exiting the script
 quit() {
-    echo -e "\n! WARNING : There might be unfavourable consequences of exiting the script in between.\n! Exiting in 5 seconds...\n  Press any key to cancel."
+    echo -e "\n\n! WARNING : There might be unfavourable consequences of exiting the script in between.\n! Exiting in 5 seconds...\n  Press any key to cancel."
 	read -r -N 1 -s -t 5 a && return 0 || exit 1
 }
 
 # This function will return true/false depending upon the key pressed.
 skip_all=false
 ask() {
-    if [[ $skip_all == "false" ]]; then
-        echo -e "\n$1\n- Do you want to execute this line (y/n/s/q): "
-        read -r -N 1 -s response
-        case $response in
-            n) return 1;;
-            y) return 0;;
-            s) skip_all=true; return 0;;
-            q) quit;;
-            *)
-               echo -e "! Invalid input\n"
-               ask $1
-        esac
-    else
-        return 0
+    echo -e "\n\$ $1"
+    read -N 1 -p "- Do you want to execute this line (y/n/s/q): " response
+    case $response in
+        n) return 1;;
+        y) return 0;;
+        s) skip_all=true; return 0;;
+        q) quit;;
+        *)
+           echo -e "! Invalid input\n"
+           ask $1
+    esac
 }
 
+# Bootmode
 liveboot="false"
 is_chroot="false"
 
@@ -114,6 +112,7 @@ for arg in "$@"; do
     esac
 done
 
+echo ""
 if [ ! -d "/sys/firmware/efi/efivars" ]; then
     echo "! UEFI not detected."
     quit
@@ -311,22 +310,27 @@ bootedvars() {
         "> Installing dots and packages"
         "bash <(curl -s https://ii.clsty.link/get)"
         "yay -Sy ${packages_to_install[*]}"
+		"git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
+		"mv -f mpv-config/* ~/.config/mpv/"
         "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
         "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
         "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
         "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
         "echo 'env = AQ_DRM_DEVICES,/dev/dri/card1' >> ~/.config/hypr/custom/env.conf"
+        "echo 'decoration:blur:enabled = false' >> ~/.config/hypr/custom/general.conf"
+        "echo 'decoration:shadow:enabled = false' >> ~/.config/hypr/custom/general.conf"
+        "echo 'misc:vfr = true' >> ~/.config/hypr/custom/general.conf"
+        "echo 'misc:vrr = false' >> ~/.config/hypr/custom/general.conf"
+        "echo 'exec-once=hyprctl setcursor Bibata-Modern-Ice 24' >> ~/.config/hypr/custom/execs.conf"
         "sudo mkdir -p /etc/systemd/system/getty@tty1.service.d"
         "sudo cp -f autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf"
         "echo \"source ~/.config/fish/auto-Hypr.fish\" | tee -a ~/.config/fish/config.fish"
         "sudo systemctl enable --now fstrim.timer"
         "touch ~/.hushlogin"
-        "cp -f hypr-user.conf ~/.config/caelestia/hypr-user.conf"
-        "cp -f shell.json ~/.config/caelestia/shell.json"
         "xhost si:localuser:root"
         "systemctl enable tlp.service"
         "mkdir -p ~/.config/wireplumber/wireplumber.conf.d"
-        "cp 10-disable-camera.conf ~/.config/wireplumber/wireplumber.conf.d/10-disable-camera.conf"
+        "cp -f 10-disable-camera.conf ~/.config/wireplumber/wireplumber.conf.d/10-disable-camera.conf"
         ########################################################
         "> Secure boot setup"
         "sudo sbctl create-keys"
@@ -359,7 +363,7 @@ bootedvars() {
         "git config --global core.editor \"nano\""
         ########################################################
         "> Auto refreshrate switch udev rule"
-        "sudo cp -f 99-ChangeRefreshRate.rules /etc/udev/rules.d/99-ChangeRefreshRate.rules"
+        "sudo cp -f 10-ChangeRefreshRate.rules /etc/udev/rules.d/10-ChangeRefreshRate.rules"
         "sudo cp -f ChangeRefreshRate.sh /usr/bin/ChangeRefreshRate.sh"
         "sudo chmod +x /usr/bin/ChangeRefreshRate.sh"
         ########################################################
@@ -404,7 +408,7 @@ for command in "${commands[@]}"; do
     else
         case ${command:0:1} in
             ">") # Progress text
-                echo -e "$command" ;; # Corrected echo -e for newline
+                echo -e "\n\n$command" ;; # Corrected echo -e for newline
             "-") # Execute directly
                 eval "${command:2}" ;; # Corrected eval for command extraction
             *) # Execute with ask()
