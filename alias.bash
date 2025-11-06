@@ -63,7 +63,7 @@ disk="/dev/nvme0n1"
 kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog"
 
 #- Packages
-base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git")
+base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git" "rsync")
 system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia-lts" "nvidia-utils" "nvidia-prime" "vulkan-mesa-layers" "tlp ethtool smartmontools")
 other_packages=("pamac-aur" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic" "zed" "zen-browser-bin" "ark" "zswap-disable-writeback" "socat" "speech-dispatcher" "xorg-xhost")
 
@@ -136,7 +136,7 @@ livevars(){
     packages_to_install+=(${base_packages[@]})
     packages_to_install+=(${system_configuration_packages[@]})
 
-    declare -a commands=(
+    commands=(
         "> Configuring time services"
         "timedatectl set-timezone $timezone"
         "hwclock --systohc"
@@ -148,7 +148,7 @@ livevars(){
         "sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf"
         ########################################################
         "> Ranking mirrors"
-        "reflector --latest 50 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist"
+        "reflector --latest 50 --sort rate --save /etc/pacman.d/mirrorlist"
         "cp -f mirrorlist /etc/pacman.d/mirrorlist"
         ########################################################
         "> Setting up partitions"
