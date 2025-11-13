@@ -55,17 +55,15 @@ keymap="us"
 font="Lat2-Terminus16"
 groups="ftp,games,http,rfkill,audio,disk,input,storage,video,wheel"
 swap_size="8G"
-swappiness="35"
-vfs_cache_pressure="50"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog"
+kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog rcutree.enable_rcu_lazy=1"
 
 #- Packages
-base_packages=("base" "linux-lts" "linux-firmware" "e2fsprogs" "sof-firmware" "networkmanager" "nano" "man-db" "man-pages" "texinfo" "base-devel" "ntfs-3g" "sudo" "refind" "sbsigntools" "sbctl" "git" "rsync")
-system_configuration_packages=("intel-ucode" "mesa" "vulkan-intel" "intel-media-driver" "vpl-gpu-rt" "libvpl" "nvidia-lts" "nvidia-utils" "nvidia-prime" "vulkan-mesa-layers" "tlp ethtool smartmontools")
-other_packages=("pamac-aur" "mpv" "ast-firmware" "upd72020x-fw" "wd719x-firmware" "aic94xx-firmware" "linux-firmware-qlogic" "zed" "zen-browser-bin" "ark" "zswap-disable-writeback" "socat" "speech-dispatcher" "xorg-xhost")
+base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager nano man-db man-pages texinfo base-devel ntfs-3g sudo refind sbsigntools sbctl git rsync")
+system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers" "tlp ethtool smartmontools")
+other_packages=("pamac-aur" "mpv" "ast-firmware wd719x-firmware linux-firmware-qlogic" "zen-browser-bin speech-dispatcher" "ark" "zswap-disable-writeback" "socat" "xorg-xhost" "stremio-enhanced-bin" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin" "gimp davinci-resolve audacity")
 
 #- Modules
 modules=("intel_agp i915")
@@ -173,7 +171,7 @@ livevars(){
         "cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist"
         "cp -f /etc/pacman.conf /mnt/etc/pacman.conf"
         "cp -f alias.bash /mnt/root/alias.bash"
-        "arch-chroot /mnt /bin/bash -c /root/alias.bash --chroot"
+        "arch-chroot /mnt /bin/bash /root/alias.bash --chroot"
         ########################################################
         "> Generating fstab"
         "partmnt"
@@ -199,13 +197,28 @@ chrootvars(){
         "> Setting up locale and keymap"
         "sed -i 's/#$locale/$locale/' /etc/locale.gen ; echo 'LANG=$lang' > /etc/locale.conf ; echo 'KEYMAP=$keymap' > /etc/vconsole.conf ; echo 'FONT=$font' >> /etc/vconsole.conf ; locale-gen"
         ########################################################
+        "> Cachy-ify"
+        "curl https://mirror.cachyos.org/cachyos-repo.tar.xz -o cachyos-repo.tar.xz"
+        "tar xvf cachyos-repo.tar.xz && cd cachyos-repo"
+        "sudo ./cachyos-repo.sh"
+        "cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz"
+        "sudo pacman -Syu linux-cachyos linux-cachyos-headers"
+        "sudo pacman -Rcnsu linux-lts"
+        "sudo mkinitcpio -P"
+        "git clone --depth=1 https://github.com/CachyOS/CachyOS-Settings.git && cd CachyOS-Settings"
+        "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/NetworkManager usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
+        "echo 'net.ipv4.tcp_fastopen = 3' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
+        "echo 'net.ipv4.tcp_timestamps = 0' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
+        "echo 'net.core.default_qdisc = cake' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
+        "echo 'net.ipv4.tcp_congestion_control = bbr' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
+        "echo 'kernel.split_lock_mitigate=0' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
+        "sudo cp -rvf ./etc/. /etc"
+        "sudo cp -rvf ./usr/. /usr"
+        "sudo chmod +x /usr/bin/dlss-swapper-dll /usr/bin/zink-run /usr/bin/dlss-swapper /usr/bin/pci-latency"
+        ########################################################
         "> Configuring network"
         "systemctl enable NetworkManager"
-        "echo 'net.ipv4.tcp_fastopen = 3' >> /etc/sysctl.d/9-custom_sysctl.conf"
-        "echo 'net.ipv4.tcp_timestamps = 0' >> /etc/sysctl.d/9-custom_sysctl.conf"
         "echo 'tcp_bbr' >> /etc/modules-load.d/modules.conf"
-        "echo 'net.core.default_qdisc = cake' >> /etc/sysctl.d/9-custom_sysctl.conf"
-        "echo 'net.ipv4.tcp_congestion_control = bbr' >> /etc/sysctl.d/9-custom_sysctl.conf"
         ########################################################
         "> Configuring hosts"
         "echo '127.0.0.1 localhost' >> /etc/hosts"
@@ -230,19 +243,13 @@ chrootvars(){
         ########################################################
         "> Configuring swap"
         "mkswap -U clear --size $swap_size --file /swapfile"
-        "echo 'vm.swappiness = $swappiness' >/etc/sysctl.d/910-swap.conf"
-        "echo 'vm.vfs_cache_pressure = $vfs_cache_pressure' >>/etc/sysctl.d/910-swap.conf"
         ########################################################
         "> Adding perf tweaks"
         "systemctl enable fstrim.timer"
-        "echo 'kernel.core_pattern=|/bin/false' >> /etc/sysctl.d/50-coredump.conf"
-        "echo 'vm.dirty_writeback_centisecs = 1500' >> /etc/sysctl.d/9-custom_sysctl.conf"
-        "echo 'vm.dirty_ratio = 2' >> /etc/sysctl.d/9-custom_sysctl.conf"
-        "echo 'vm.dirty_background_ratio = 1' >> /etc/sysctl.d/9-custom_sysctl.conf"
-        "echo 'dev.perf_stream_paranoid=0' >> /etc/sysctl.d/9-custom_sysctl.conf"
+        "echo 'kernel.core_pattern=|/bin/false' >> /etc/sysctl.d/10-coredump.conf"
         "sed -i 's/-march=x86-64 -mtune=generic/-march=native -mtune=native/' /etc/makepkg.conf"
         "sed -i 's/#RUSTFLAGS=\"-C opt-level=2\"/RUSTFLAGS=\"-C opt-level=2 -C target-cpu=native\"/' /etc/makepkg.conf"
-        "sed -i 's/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j14\"/' /etc/makepkg.conf"
+        "sed -i 's/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j20\"/' /etc/makepkg.conf"
         "sed -i \"s/#BUILDDIR=\/tmp\/makepkg/BUILDDIR=\/tmp\/makepkg/\" /etc/makepkg.conf"
         "sed -i \"s/PKGEXT='.pkg.tar.zst'/PKGEXT='.pkg.tar'/\" /etc/makepkg.conf"
         "echo 'options i915 enable_fbc=1' >> /etc/modprobe.d/i915.conf"
@@ -250,7 +257,6 @@ chrootvars(){
         "sed -i '/^HOOKS=/s/kms/systemd/' /etc/mkinitcpio.conf"
         "sed -i '/^HOOKS=/s/fsck/sd-vconsole/' /etc/mkinitcpio.conf"
         "sed -i 's/MODULES=()/MODULES=(${modules[*]})/' /etc/mkinitcpio.conf"
-        "echo 'kernel.printk = 3 3 3 3' | sudo tee -a /etc/sysctl.d/10-quiet-printk.conf"
     )
 }
 
@@ -310,9 +316,15 @@ bootedvars() {
         "> Installing dots and packages"
         "bash <(curl -s https://ii.clsty.link/get)"
         "yay -Sy ${packages_to_install[*]}"
+        "sudo systemctl enable warp-svc"
+        "sudo systemctl start warp-svc"
+        "warp-cli registration new"
+        "warp-cli mode warp+doh"
 		"git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
 		"mv -f mpv-config/* ~/.config/mpv/"
         "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
+        "cp -rf fastfetch ~/.local/share/"
+        "echo \"fastfetch --config groups\" | tee -a ~/.config/fish/config.fish"
         "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
         "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
         "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
@@ -321,13 +333,12 @@ bootedvars() {
         "echo 'decoration:shadow:enabled = false' >> ~/.config/hypr/custom/general.conf"
         "echo 'misc:vfr = true' >> ~/.config/hypr/custom/general.conf"
         "echo 'misc:vrr = false' >> ~/.config/hypr/custom/general.conf"
-        "echo 'exec-once=hyprctl setcursor Bibata-Modern-Ice 24' >> ~/.config/hypr/custom/execs.conf"
         "sudo mkdir -p /etc/systemd/system/getty@tty1.service.d"
         "sudo cp -f autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf"
         "echo \"source ~/.config/fish/auto-Hypr.fish\" | tee -a ~/.config/fish/config.fish"
         "sudo systemctl enable --now fstrim.timer"
         "touch ~/.hushlogin"
-        "xhost si:localuser:root"
+#        "xhost si:localuser:root"
         "systemctl enable tlp.service"
         "mkdir -p ~/.config/wireplumber/wireplumber.conf.d"
         "cp -f 10-disable-camera.conf ~/.config/wireplumber/wireplumber.conf.d/10-disable-camera.conf"
@@ -353,7 +364,7 @@ bootedvars() {
         "sudo mkdir -p /efi/EFI/Boot/themes"
         "sudo cp -rf rEFInd-minimal-modded /efi/EFI/Boot/themes/rEFInd-minimal"
         "sudo cp -f refind.conf /efi/EFI/Boot/"
-        "sudo mkrlconf"
+        "sudo mkrlconf --force"
         "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params $hiber\"/' /boot/refind_linux.conf"
         "sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf"
         ########################################################
@@ -371,16 +382,17 @@ bootedvars() {
         "sudo systemctl enable nvidia-suspend.service"
         "sudo systemctl enable nvidia-resume.service"
         "sudo systemctl enable nvidia-hibernate.service"
-        "sudo systemctl enable nvidia-powerd"
         "echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_TemporaryFilePath=/var/tmp' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia \"NVreg_DynamicPowerManagement=0x03\"' | sudo tee -a /etc/modprobe.d/nvi.conf"
+        "echo 'options nvidia NVreg_UsePageAttributeTable=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
+        "echo 'options nvidia NVreg_InitializeSystemMemoryAllocations=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
         ########################################################
     )
 }
 
-if [[ "$liveboot" == "true" ]]; then
+if [[ "$liveboot" == "true" ]] && [[ "$is_chroot" == "false" ]]; then
     livevars
 elif [[ "$is_chroot" == "true" ]] then
     chrootvars
