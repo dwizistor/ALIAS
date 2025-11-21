@@ -209,8 +209,6 @@ chrootvars(){
         "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/NetworkManager usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
         "echo 'net.ipv4.tcp_fastopen = 3' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
         "echo 'net.ipv4.tcp_timestamps = 0' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
-        "echo 'net.core.default_qdisc = cake' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
-        "echo 'net.ipv4.tcp_congestion_control = bbr' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
         "echo 'kernel.split_lock_mitigate=0' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
         "sudo cp -rvf ./etc/. /etc"
         "sudo cp -rvf ./usr/. /usr"
@@ -218,7 +216,6 @@ chrootvars(){
         ########################################################
         "> Configuring network"
         "systemctl enable NetworkManager"
-        "echo 'tcp_bbr' >> /etc/modules-load.d/modules.conf"
         ########################################################
         "> Configuring hosts"
         "echo '127.0.0.1 localhost' >> /etc/hosts"
