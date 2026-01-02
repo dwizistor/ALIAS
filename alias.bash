@@ -62,7 +62,7 @@ kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto 
 
 #- Packages
 base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager nano man-db man-pages texinfo base-devel ntfs-3g sudo refind sbsigntools sbctl git rsync")
-system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers" "tlp ethtool smartmontools")
+system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-open-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers" "tlp ethtool smartmontools")
 other_packages=("pamac-aur" "mpv" "ast-firmware wd719x-firmware linux-firmware-qlogic" "zen-browser-bin speech-dispatcher" "ark" "zswap-disable-writeback" "socat" "xorg-xhost" "stremio-enhanced-bin" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin" "gimp davinci-resolve audacity")
 
 #- Modules
@@ -146,7 +146,7 @@ livevars(){
         "sed -i '/^#\[multilib\]/,+1 s/^#//' /etc/pacman.conf"
         ########################################################
         "> Ranking mirrors"
-        "reflector --latest 50 --sort rate --save /etc/pacman.d/mirrorlist"
+        "reflector --latest 100 --sort rate --save /etc/pacman.d/mirrorlist"
         "cp -f mirrorlist /etc/pacman.d/mirrorlist"
         ########################################################
         "> Setting up partitions"
@@ -167,9 +167,14 @@ livevars(){
         "> Generating fstab"
         "genfstab -U /mnt >/mnt/etc/fstab"
         ########################################################
-        "> Switching to chroot on /mnt"
+        "> Copying configured files"
         "cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist"
         "cp -f /etc/pacman.conf /mnt/etc/pacman.conf"
+        "sudo mkdir /etc/systemd/resolved.conf.d"
+        "cp -f dns.conf /mnt/etc/systemd/resolved.conf.d/dns.conf"
+#        "cp -f tlp.conf /mnt/etc/tlp.conf"
+        ########################################################
+        "> Switching to chroot on /mnt"
         "cp -f alias.bash /mnt/root/alias.bash"
         "arch-chroot /mnt /bin/bash /root/alias.bash --chroot"
         ########################################################
@@ -178,9 +183,6 @@ livevars(){
         "genfstab -U /mnt >/mnt/etc/fstab"
         "sed -i '1,/relatime/ s/relatime/noatime,commit=60,barrier=0/' /mnt/etc/fstab"
         "echo -e '# SWAP\n/swapfile none swap defaults 0 0' >>/mnt/etc/fstab"
-        ########################################################
-        "> Configuring TLP"
-        "cp -f tlp.conf /mnt/etc/tlp.conf"
         ########################################################
         "> Finished!"
     )
@@ -202,14 +204,14 @@ chrootvars(){
         "tar xvf cachyos-repo.tar.xz && cd cachyos-repo"
         "sudo ./cachyos-repo.sh"
         "cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz"
-        "sudo pacman -Syu linux-cachyos linux-cachyos-headers"
+        "sudo pacman -Syu linux-cachyos-lts linux-cachyos-headers-lts"
         "sudo pacman -Rcnsu linux-lts"
         "sudo mkinitcpio -P"
         "git clone --depth=1 https://github.com/CachyOS/CachyOS-Settings.git && cd CachyOS-Settings"
-        "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/NetworkManager usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
-        "echo 'net.ipv4.tcp_fastopen = 3' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
-        "echo 'net.ipv4.tcp_timestamps = 0' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
-        "echo 'kernel.split_lock_mitigate=0' | sudo tee -a usr/lib/sysctl.d/99-cachyos-settings.conf"
+        "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
+        "echo 'net.ipv4.tcp_fastopen = 3' | sudo tee -a usr/lib/sysctl.d/70-cachyos-settings.conf"
+        "echo 'net.ipv4.tcp_timestamps = 0' | sudo tee -a usr/lib/sysctl.d/70-cachyos-settings.conf"
+        "echo 'kernel.split_lock_mitigate=0' | sudo tee -a usr/lib/sysctl.d/70-cachyos-settings.conf"
         "sudo cp -rvf ./etc/. /etc"
         "sudo cp -rvf ./usr/. /usr"
         "sudo chmod +x /usr/bin/dlss-swapper-dll /usr/bin/zink-run /usr/bin/dlss-swapper /usr/bin/pci-latency"
@@ -269,41 +271,55 @@ bootedvars() {
     hiber="resume=UUID=$linpartuuid resume_offset=$offset"
 
     rfhook="[Trigger]
-    Operation=Upgrade
-    Type=Package
-    Target=refind
+Operation=Upgrade
+Type=Package
+Target=refind
 
-    [Action]
-    Description = Updating rEFInd on ESP
-    When=PostTransaction
-    Exec=/usr/bin/refind-install --usedefault $efipart"
+[Action]
+Description = Updating rEFInd on ESP
+When=PostTransaction
+Exec=/usr/bin/refind-install --usedefault $efipart"
 
     nvhook="[Trigger]
-    Operation=Install
-    Operation=Upgrade
-    Operation=Remove
-    Type=Package
-    # You can remove package(s) that don't apply to your config, e.g. if you only use nvidia-open you can remove nvidia-lts as a Target
-    Target=nvidia
-    Target=nvidia-open
-    Target=nvidia-lts
-    # If running a different kernel, modify below to match
-    Target=linux
+Operation=Install
+Operation=Upgrade
+Operation=Remove
+Type=Package
 
-    [Action]
-    Description=Updating NVIDIA module in initcpio
-    Depends=mkinitcpio
-    When=PostTransaction
-    NeedsTargets
-    Exec=/bin/sh -c 'while read -r trg; do case \\\$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
+# You can remove package(s) that don't apply to your config, e.g. if you only use nvidia-open you can remove nvidia-lts as a Target
+Target=nvidia
+Target=nvidia-open
+Target=nvidia-lts
+# If running a different kernel, modify below to match
+Target=linux
+
+[Action]
+Description=Updating NVIDIA module in initcpio
+Depends=mkinitcpio
+When=PostTransaction
+NeedsTargets
+Exec=/bin/sh -c 'while read -r trg; do case \\\$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
 
     nvrules='# Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add|change|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add|change|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+# Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"'
 
-    # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"'
+    pwrserv='[Unit]
+Description=Enable NVIDIA GPU runtime power management
+After=multi-user.target tlp.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/control'
+
+[Install]
+WantedBy=multi-user.target'
+
+    pwrconf="[Service]
+ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/control'"
 
     commands=(
         "> Setting up clock"
@@ -317,7 +333,7 @@ bootedvars() {
         "sudo systemctl start warp-svc"
         "warp-cli registration new"
         "warp-cli mode warp+doh"
-		"git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
+		"rm -rf mpv-config && git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
 		"mv -f mpv-config/* ~/.config/mpv/"
         "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
         "cp -rf fastfetch ~/.local/share/"
@@ -379,12 +395,21 @@ bootedvars() {
         "sudo systemctl enable nvidia-suspend.service"
         "sudo systemctl enable nvidia-resume.service"
         "sudo systemctl enable nvidia-hibernate.service"
+        "sudo systemctl disable nvidia-persistenced"
         "echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_TemporaryFilePath=/var/tmp' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia \"NVreg_DynamicPowerManagement=0x03\"' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_UsePageAttributeTable=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_InitializeSystemMemoryAllocations=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
+        "echo 'options nvidia NVreg_RegistryDwords=RmEnableAggressiveVblank=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
+        "echo 'options nvidia modeset=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
+        "echo 'options nvidia NVreg_EnableNonblockingOpen=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
+        "sudo mv /usr/share/glvnd/egl_vendor.d/{10,90}_nvidia.json"
+        "echo '__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json' | sudo tee -a /etc/environment"
         "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
+        "echo \"$pwrserv\" | sudo tee -a /etc/systemd/system/nvidia-power-control.service > /dev/null"
+        "sudo systemctl enable nvidia-power-control"
+        "echo \"$pwrconf\" | sudo tee -a /etc/systemd/system/nvidia-resume.service.d/restore-pm.conf > /dev/null"
         ########################################################
     )
 }
