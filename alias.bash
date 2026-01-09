@@ -58,12 +58,12 @@ swap_size="8G"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog rcutree.enable_rcu_lazy=1"
+kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog rcutree.enable_rcu_lazy=1 fbcon=nodefer"
 
 #- Packages
-base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager nano man-db man-pages texinfo base-devel ntfs-3g sudo refind sbsigntools sbctl git rsync")
-system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-open-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers" "tlp ethtool smartmontools")
-other_packages=("pamac-aur" "mpv" "ast-firmware wd719x-firmware linux-firmware-qlogic" "zen-browser-bin speech-dispatcher" "ark" "zswap-disable-writeback" "socat" "xorg-xhost" "stremio-enhanced-bin" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin" "gimp davinci-resolve audacity")
+base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager micro man-db man-pages texinfo base-devel ntfs-3g sudo booster systemd-ukify sbsigntools sbctl git rsync zsh")
+system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-open-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers")
+other_packages=("cosmic gnome-keyring" "pamac-aur" "mpv" "zen-browser-bin speech-dispatcher" "zswap-disable-writeback" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin stremio-enhanced-bin" "gimp davinci-resolve audacity anydesk-bin handbrake")
 
 #- Modules
 modules=("intel_agp i915")
@@ -172,7 +172,6 @@ livevars(){
         "cp -f /etc/pacman.conf /mnt/etc/pacman.conf"
         "sudo mkdir /etc/systemd/resolved.conf.d"
         "cp -f dns.conf /mnt/etc/systemd/resolved.conf.d/dns.conf"
-#        "cp -f tlp.conf /mnt/etc/tlp.conf"
         ########################################################
         "> Switching to chroot on /mnt"
         "cp -f alias.bash /mnt/root/alias.bash"
@@ -192,6 +191,22 @@ livevars(){
 # Chroot environment
 # -----------------------------------------------------------------------------
 chrootvars(){
+    linpartuuid=$(blkid -s UUID -o value $linpart)
+
+    ukihook="[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux-cachyos-lts
+Target = booster
+Target = intel-ucode
+Target = systemd
+
+[Action]
+Description = Generating UKI with Booster, Intel Microcode, and Ukify...
+When = PostTransaction
+Exec = /bin/sh -c '/usr/lib/booster/regenerate_images && /usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi'"
+
     commands=(
         "> Configuring time services"
         "ln -sf /usr/share/zoneinfo/$timezone /etc/localtime"
@@ -206,7 +221,7 @@ chrootvars(){
         "cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz"
         "sudo pacman -Syu linux-cachyos-lts linux-cachyos-headers-lts"
         "sudo pacman -Rcnsu linux-lts"
-        "sudo mkinitcpio -P"
+        "sudo /usr/lib/booster/regenerate_images"
         "git clone --depth=1 https://github.com/CachyOS/CachyOS-Settings.git && cd CachyOS-Settings"
         "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
         "echo 'net.ipv4.tcp_fastopen = 3' | sudo tee -a usr/lib/sysctl.d/70-cachyos-settings.conf"
@@ -233,17 +248,27 @@ chrootvars(){
         "echo 'Defaults timestamp_timeout = -1' > /etc/sudoers.d/01-alias"
         "sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers"
         ########################################################
-        "> Generating initramfs"
-        "mkinitcpio -P"
-        ########################################################
-        "> Installing bootloader"
-        "refind-install --usedefault $efipart"
-        "efibootmgr --create --disk $disk --part 1 --loader /EFI/boot/bootx64.efi --label 'rEFInd' --verbose"
-        ########################################################
         "> Configuring swap"
         "mkswap -U clear --size $swap_size --file /swapfile"
         ########################################################
+        "> Installing EFISTUB"
+        "echo 'rw root=UUID=$linpartuuid $kernel_params $hiber' | tee -a /etc/kernel/cmdline"
+        "mkdir -p /etc/pacman.d/hooks"
+        "echo $ukihook | tee -a /etc/pacman.d/hooks/uki.hook"
+        "echo -e 'strip: true\nmodules_force_load: intel_agp,i915' | tee -a /etc/booster.yaml"
+        "/usr/lib/booster/regenerate_images"
+        "ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi"
+        "efibootmgr --create --disk /dev/nvme0n1 --part 1 --label "Arch Linux" --loader /EFI/Linux/arch-linux.efi"
+        "sbctl sign -s /efi/EFI/Linux/arch-linux.efi"
+        ########################################################
+        "> Secure boot setup"
+        "sbctl create-keys"
+        "sbctl enroll-keys -m"
+        "export ESP_PATH=/efi"
+        "sbctl verify | sed -E 's|^.* (/.+) is not signed$|sbctl sign -s "\1"|e'"
+        ########################################################
         "> Adding perf tweaks"
+        "systemctl mask systemd-tpm2-setup.service systemd-tpm2-setup-early.service"
         "systemctl enable fstrim.timer"
         "echo 'kernel.core_pattern=|/bin/false' >> /etc/sysctl.d/10-coredump.conf"
         "sed -i 's/-march=x86-64 -mtune=generic/-march=native -mtune=native/' /etc/makepkg.conf"
@@ -253,9 +278,6 @@ chrootvars(){
         "sed -i \"s/PKGEXT='.pkg.tar.zst'/PKGEXT='.pkg.tar'/\" /etc/makepkg.conf"
         "echo 'options i915 enable_fbc=1' >> /etc/modprobe.d/i915.conf"
         "echo 'options i915 enable_psr=1' >> /etc/modprobe.d/i915.conf"
-        "sed -i '/^HOOKS=/s/kms/systemd/' /etc/mkinitcpio.conf"
-        "sed -i '/^HOOKS=/s/fsck/sd-vconsole/' /etc/mkinitcpio.conf"
-        "sed -i 's/MODULES=()/MODULES=(${modules[*]})/' /etc/mkinitcpio.conf"
     )
 }
 
@@ -265,40 +287,6 @@ chrootvars(){
 bootedvars() {
     packages_to_install=()
     packages_to_install+=(${other_packages[@]})
-
-    offset=$(sudo filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
-    linpartuuid=$(blkid -s UUID -o value $linpart)
-    hiber="resume=UUID=$linpartuuid resume_offset=$offset"
-
-    rfhook="[Trigger]
-Operation=Upgrade
-Type=Package
-Target=refind
-
-[Action]
-Description = Updating rEFInd on ESP
-When=PostTransaction
-Exec=/usr/bin/refind-install --usedefault $efipart"
-
-    nvhook="[Trigger]
-Operation=Install
-Operation=Upgrade
-Operation=Remove
-Type=Package
-
-# You can remove package(s) that don't apply to your config, e.g. if you only use nvidia-open you can remove nvidia-lts as a Target
-Target=nvidia
-Target=nvidia-open
-Target=nvidia-lts
-# If running a different kernel, modify below to match
-Target=linux
-
-[Action]
-Description=Updating NVIDIA module in initcpio
-Depends=mkinitcpio
-When=PostTransaction
-NeedsTargets
-Exec=/bin/sh -c 'while read -r trg; do case \\\$trg in linux*) exit 0; esac; done; /usr/bin/mkinitcpio -P'"
 
     nvrules='# Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
 ACTION=="add|change|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
@@ -326,70 +314,29 @@ ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/
         "timedatectl"
         "sudo hwclock -u -w"
         ########################################################
-        "> Installing dots and packages"
-        "bash <(curl -s https://ii.clsty.link/get)"
+        "> Installing packages and desktop env"
         "yay -Sy ${packages_to_install[*]}"
+        "sudo systemctl enable cosmic-greeter.service"
         "sudo systemctl enable warp-svc"
         "sudo systemctl start warp-svc"
         "warp-cli registration new"
         "warp-cli mode warp+doh"
 		"rm -rf mpv-config && git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
 		"mv -f mpv-config/* ~/.config/mpv/"
-        "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
         "cp -rf fastfetch ~/.local/share/"
-        "echo \"fastfetch --config groups\" | tee -a ~/.config/fish/config.fish"
-        "echo 'env = LIBVA_DRIVER_NAME,iHD' >> ~/.config/hypr/custom/env.conf"
-        "echo 'env = VDPAU_DRIVER,va_gl' >> ~/.config/hypr/custom/env.conf"
-        "echo 'env = ANV_VIDEO_DECODE,1' >> ~/.config/hypr/custom/env.conf"
-        "echo 'env = AQ_DRM_DEVICES,/dev/dri/card1' >> ~/.config/hypr/custom/env.conf"
-        "echo 'decoration:blur:enabled = false' >> ~/.config/hypr/custom/general.conf"
-        "echo 'decoration:shadow:enabled = false' >> ~/.config/hypr/custom/general.conf"
-        "echo 'misc:vfr = true' >> ~/.config/hypr/custom/general.conf"
-        "echo 'misc:vrr = false' >> ~/.config/hypr/custom/general.conf"
-        "sudo mkdir -p /etc/systemd/system/getty@tty1.service.d"
-        "sudo cp -f autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf"
-        "echo \"source ~/.config/fish/auto-Hypr.fish\" | tee -a ~/.config/fish/config.fish"
+        "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+        "echo \"fastfetch --config groups\" | tee -a ~/.zshrc"
+        "echo 'export LIBVA_DRIVER_NAME=iHD' >> ~/.zshrc"
+        "echo 'export VDPAU_DRIVER=va_gl' >> ~/.zshrc"
+        "echo 'export ANV_VIDEO_DECODE=1' >> ~/.zshrc"
         "sudo systemctl enable --now fstrim.timer"
         "touch ~/.hushlogin"
-#        "xhost si:localuser:root"
-        "systemctl enable tlp.service"
-        "mkdir -p ~/.config/wireplumber/wireplumber.conf.d"
-        "cp -f 10-disable-camera.conf ~/.config/wireplumber/wireplumber.conf.d/10-disable-camera.conf"
-        ########################################################
-        "> Secure boot setup"
-        "sudo sbctl create-keys"
-        "sudo sbctl enroll-keys -m"
-        "export ESP_PATH=/efi"
-        "sudo mkdir -p /etc/refind.d/keys"
-        "sudo cp /var/lib/sbctl/keys/db/db.key /etc/refind.d/keys/refind_local.key"
-        "sudo cp /var/lib/sbctl/keys/db/db.pem /etc/refind.d/keys/refind_local.crt"
-        "sudo refind-install --localkeys --usedefault $efipart"
-        "sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'"
-        "export ESP_PATH=/boot"
-        "sudo sbctl verify | sed 's/✗ /sudo sbctl sign -s /e'"
-        "sudo mkinitcpio -P"
-        "echo \"$rfhook\" | sudo tee -a /etc/pacman.d/hooks/refind.hook > /dev/null"
-        ########################################################
-        "> reFind & Theme setup"
-        "git clone --depth=1 https://github.com/AdityaGarg8/rEFInd-minimal-modded"
-        "sed -i '/showtools shutdown/d' rEFInd-minimal-modded/theme.conf"
-        "sudo rm -rf /efi/EFI/Boot/themes/*"
-        "sudo mkdir -p /efi/EFI/Boot/themes"
-        "sudo cp -rf rEFInd-minimal-modded /efi/EFI/Boot/themes/rEFInd-minimal"
-        "sudo cp -f refind.conf /efi/EFI/Boot/"
-        "sudo mkrlconf --force"
-        "sudo sed -i '1s/\(UUID=[^\"]*\)\"/\1 $kernel_params $hiber\"/' /boot/refind_linux.conf"
-        "sudo sed -i '1s/ro/rw/' /boot/refind_linux.conf"
+#        "systemctl enable tlp.service"
         ########################################################
         "> Git config"
         "git config --global user.name \"$gitname\""
         "git config --global user.email \"$gitemail\""
-        "git config --global core.editor \"nano\""
-        ########################################################
-        "> Auto refreshrate switch udev rule"
-        "sudo cp -f 10-ChangeRefreshRate.rules /etc/udev/rules.d/10-ChangeRefreshRate.rules"
-        "sudo cp -f ChangeRefreshRate.sh /usr/bin/ChangeRefreshRate.sh"
-        "sudo chmod +x /usr/bin/ChangeRefreshRate.sh"
+        "git config --global core.editor \"micro\""
         ########################################################
         "> Enable nvidia services"
         "sudo systemctl enable nvidia-suspend.service"
@@ -406,7 +353,7 @@ ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/
         "echo 'options nvidia NVreg_EnableNonblockingOpen=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "sudo mv /usr/share/glvnd/egl_vendor.d/{10,90}_nvidia.json"
         "echo '__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json' | sudo tee -a /etc/environment"
-        "echo \"$nvhook\" | sudo tee -a /etc/pacman.d/hooks/nvidia.hook > /dev/null"
+        "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
         "echo \"$pwrserv\" | sudo tee -a /etc/systemd/system/nvidia-power-control.service > /dev/null"
         "sudo systemctl enable nvidia-power-control"
         "echo \"$pwrconf\" | sudo tee -a /etc/systemd/system/nvidia-resume.service.d/restore-pm.conf > /dev/null"
