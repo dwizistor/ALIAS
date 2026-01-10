@@ -205,7 +205,7 @@ Target = systemd
 [Action]
 Description = Generating UKI with Booster, Intel Microcode, and Ukify...
 When = PostTransaction
-Exec = /bin/sh -c '/usr/lib/booster/regenerate_images && /usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi'"
+Exec = /bin/sh -c '/usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi'"
 
     commands=(
         "> Configuring time services"
@@ -219,9 +219,9 @@ Exec = /bin/sh -c '/usr/lib/booster/regenerate_images && /usr/lib/systemd/ukify 
         "tar xvf cachyos-repo.tar.xz && cd cachyos-repo"
         "sudo ./cachyos-repo.sh"
         "cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz"
+        "echo -e 'strip: true\nmodules_force_load: intel_agp,i915' | tee -a /etc/booster.yaml"
         "sudo pacman -Syu linux-cachyos-lts linux-cachyos-headers-lts"
         "sudo pacman -Rcnsu linux-lts"
-        "sudo /usr/lib/booster/regenerate_images"
         "git clone --depth=1 https://github.com/CachyOS/CachyOS-Settings.git && cd CachyOS-Settings"
         "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
         "echo 'net.ipv4.tcp_fastopen = 3' | sudo tee -a usr/lib/sysctl.d/70-cachyos-settings.conf"
@@ -255,8 +255,6 @@ Exec = /bin/sh -c '/usr/lib/booster/regenerate_images && /usr/lib/systemd/ukify 
         "echo 'rw root=UUID=$linpartuuid $kernel_params $hiber' | tee -a /etc/kernel/cmdline"
         "mkdir -p /etc/pacman.d/hooks"
         "echo $ukihook | tee -a /etc/pacman.d/hooks/uki.hook"
-        "echo -e 'strip: true\nmodules_force_load: intel_agp,i915' | tee -a /etc/booster.yaml"
-        "/usr/lib/booster/regenerate_images"
         "ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi"
         "efibootmgr --create --disk /dev/nvme0n1 --part 1 --label "Arch Linux" --loader /EFI/Linux/arch-linux.efi"
         "sbctl sign -s /efi/EFI/Linux/arch-linux.efi"
