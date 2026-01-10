@@ -63,7 +63,7 @@ kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto 
 #- Packages
 base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager micro man-db man-pages texinfo base-devel ntfs-3g sudo booster systemd-ukify sbsigntools sbctl git rsync zsh")
 system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-open-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers")
-other_packages=("cosmic gnome-keyring" "pamac-aur" "mpv" "zen-browser-bin speech-dispatcher" "zswap-disable-writeback" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin stremio-enhanced-bin" "gimp davinci-resolve audacity anydesk-bin handbrake")
+other_packages=("cosmic gnome-keyring cosmic-ext-applet-privacy-indicator cosmic-applet-music-player-git cosmic-ext-applet-caffeine-git cosmic-ext-tweaks-git" "pamac-aur" "mpv" "zen-browser-bin speech-dispatcher" "zswap-disable-writeback" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin stremio-enhanced-bin" "gimp davinci-resolve audacity anydesk-bin handbrake")
 
 #- Modules
 modules=("intel_agp i915")
@@ -328,6 +328,7 @@ ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/
         "echo 'export VDPAU_DRIVER=va_gl' >> ~/.zshrc"
         "echo 'export ANV_VIDEO_DECODE=1' >> ~/.zshrc"
         "sudo systemctl enable --now fstrim.timer"
+        "sudo chmod 4755 /usr/lib/polkit-1/polkit-agent-helper-1" #Fix for automatic authentication fail on polkit
         "touch ~/.hushlogin"
 #        "systemctl enable tlp.service"
         ########################################################
