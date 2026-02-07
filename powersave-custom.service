@@ -1,0 +1,10 @@
+[Unit]
+Description=Custom Power Saving Rules
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/powersave.sh
+
+[Install]
+WantedBy=multi-user.target

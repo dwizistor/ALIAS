@@ -58,12 +58,12 @@ swap_size="8G"
 
 #- Bootloader
 disk="/dev/nvme0n1"
-kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog rcutree.enable_rcu_lazy=1 fbcon=nodefer"
+kernel_params="mem_sleep_default=deep quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0 reboot=acpi nowatchdog rcutree.enable_rcu_lazy=1 fbcon=nodefer nvidia-drm.modeset=0"
 
 #- Packages
-base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager micro man-db man-pages texinfo base-devel ntfs-3g sudo booster systemd-ukify sbsigntools sbctl git rsync zsh")
+base_packages=("base linux-lts linux-firmware e2fsprogs" "sof-firmware networkmanager micro man-db man-pages texinfo base-devel ntfs-3g sudo booster systemd-ukify sbsigntools sbctl git rsync zsh efibootmgr")
 system_configuration_packages=("intel-ucode mesa vulkan-intel intel-media-driver vpl-gpu-rt libvpl" "nvidia-open-dkms nvidia-utils nvidia-prime" "vulkan-mesa-layers")
-other_packages=("cosmic gnome-keyring cosmic-ext-applet-privacy-indicator cosmic-applet-music-player-git cosmic-ext-applet-caffeine-git cosmic-ext-tweaks-git" "pamac-aur" "mpv" "zen-browser-bin speech-dispatcher" "zswap-disable-writeback" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin stremio-enhanced-bin" "gimp davinci-resolve audacity anydesk-bin handbrake")
+other_packages=("cosmic gnome-keyring cosmic-ext-applet-caffeine-git cosmic-ext-tweaks-git bluez power-profiles-daemon" "pamac-aur" "mpv" "vivaldi" "zswap-disable-writeback" "cloudflare-warp-bin" "visual-studio-code-bin" "fastfetch" "ayugram-desktop-bin stremio-enhanced-bin" "gimp davinci-resolve audacity anydesk-bin handbrake")
 
 #- Modules
 modules=("intel_agp i915")
@@ -89,7 +89,7 @@ ask() {
         s) skip_all=true; return 0;;
         q) quit;;
         *)
-           echo -e "! Invalid input\n"
+           echo -e "\n! Invalid input\n"
            ask $1
     esac
 }
@@ -164,7 +164,8 @@ livevars(){
         "pacman -Sy archlinux-keyring"
         "pacstrap -K /mnt ${packages_to_install[*]}"
         ########################################################
-        "> Generating fstab"
+        "> Generating fstab and swapfile"
+        "mkswap -U clear --size $swap_size --file /swapfile"
         "genfstab -U /mnt >/mnt/etc/fstab"
         ########################################################
         "> Copying configured files"
@@ -174,7 +175,7 @@ livevars(){
         "cp -f dns.conf /mnt/etc/systemd/resolved.conf.d/dns.conf"
         ########################################################
         "> Switching to chroot on /mnt"
-        "cp -f alias.bash /mnt/root/alias.bash"
+        "cp -rf ./ /mnt/root/"
         "arch-chroot /mnt /bin/bash /root/alias.bash --chroot"
         ########################################################
         "> Generating fstab"
@@ -192,20 +193,8 @@ livevars(){
 # -----------------------------------------------------------------------------
 chrootvars(){
     linpartuuid=$(blkid -s UUID -o value $linpart)
-
-    ukihook="[Trigger]
-Operation = Install
-Operation = Upgrade
-Type = Package
-Target = linux-cachyos-lts
-Target = booster
-Target = intel-ucode
-Target = systemd
-
-[Action]
-Description = Generating UKI with Booster, Intel Microcode, and Ukify...
-When = PostTransaction
-Exec = /bin/sh -c '/usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi'"
+    offset=$(sudo filefrag -v /swapfile | awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
+    hiber="resume=UUID=$linpartuuid resume_offset=$offset"
 
     commands=(
         "> Configuring time services"
@@ -219,8 +208,8 @@ Exec = /bin/sh -c '/usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cach
         "tar xvf cachyos-repo.tar.xz && cd cachyos-repo"
         "sudo ./cachyos-repo.sh"
         "cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz"
-        "echo -e 'strip: true\nmodules_force_load: intel_agp,i915' | tee -a /etc/booster.yaml"
-        "sudo pacman -Syu linux-cachyos-lts linux-cachyos-headers-lts"
+        "echo -e 'strip: true\nmodules_force_load: intel_agp,i915,ext4\nuniversal: false' | tee -a /etc/booster.yaml"
+        "sudo pacman -Syu linux-cachyos-lts linux-cachyos-lts-headers"
         "sudo pacman -Rcnsu linux-lts"
         "git clone --depth=1 https://github.com/CachyOS/CachyOS-Settings.git && cd CachyOS-Settings"
         "rm -rf etc/debuginfod usr/lib/modprobe.d/nvidia.conf usr/lib/modprobe.d/amdgpu.conf usr/lib/systemd/zram-generator.conf usr/lib/udev/rules.d/30-zram.rules usr/lib/udev/rules.d/50-sata.rules usr/share"
@@ -233,6 +222,7 @@ Exec = /bin/sh -c '/usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cach
         ########################################################
         "> Configuring network"
         "systemctl enable NetworkManager"
+        "systemctl enable systemd-resolved"
         ########################################################
         "> Configuring hosts"
         "echo '127.0.0.1 localhost' >> /etc/hosts"
@@ -248,22 +238,20 @@ Exec = /bin/sh -c '/usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cach
         "echo 'Defaults timestamp_timeout = -1' > /etc/sudoers.d/01-alias"
         "sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers"
         ########################################################
-        "> Configuring swap"
-        "mkswap -U clear --size $swap_size --file /swapfile"
-        ########################################################
         "> Installing EFISTUB"
         "echo 'rw root=UUID=$linpartuuid $kernel_params $hiber' | tee -a /etc/kernel/cmdline"
         "mkdir -p /etc/pacman.d/hooks"
-        "echo $ukihook | tee -a /etc/pacman.d/hooks/uki.hook"
-        "ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi"
-        "efibootmgr --create --disk /dev/nvme0n1 --part 1 --label "Arch Linux" --loader /EFI/Linux/arch-linux.efi"
-        "sbctl sign -s /efi/EFI/Linux/arch-linux.efi"
+        "cp -rf uki.hook /etc/pacman.d/hooks/uki.hook"
+        "mkdir /efi/EFI/Linux"
+        "ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=\"$(cat /etc/kernel/cmdline)\" --output=/efi/EFI/Linux/arch-linux.efi"
+        "efibootmgr --create --disk /dev/nvme0n1 --part 1 --label \"Arch Linux\" --loader /EFI/Linux/arch-linux.efi"
         ########################################################
         "> Secure boot setup"
         "sbctl create-keys"
         "sbctl enroll-keys -m"
         "export ESP_PATH=/efi"
-        "sbctl verify | sed -E 's|^.* (/.+) is not signed$|sbctl sign -s "\1"|e'"
+        "sbctl verify | sed -E 's|^.* (/.+) is not signed$|sbctl sign -s \"\\1\"|e'"
+        "sbctl sign -s /efi/EFI/Linux/arch-linux.efi"
         ########################################################
         "> Adding perf tweaks"
         "systemctl mask systemd-tpm2-setup.service systemd-tpm2-setup-early.service"
@@ -286,50 +274,33 @@ bootedvars() {
     packages_to_install=()
     packages_to_install+=(${other_packages[@]})
 
-    nvrules='# Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-ACTION=="add|change|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add|change|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-# Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"'
-
-    pwrserv='[Unit]
-Description=Enable NVIDIA GPU runtime power management
-After=multi-user.target tlp.service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/control'
-
-[Install]
-WantedBy=multi-user.target'
-
-    pwrconf="[Service]
-ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/control'"
-
     commands=(
         "> Setting up clock"
         "timedatectl"
-        "sudo hwclock -u -w"
+        "sudo hwclock -w"
         ########################################################
         "> Installing packages and desktop env"
         "yay -Sy ${packages_to_install[*]}"
         "sudo systemctl enable cosmic-greeter.service"
-        "sudo systemctl enable warp-svc"
-        "sudo systemctl start warp-svc"
-        "warp-cli registration new"
-        "warp-cli mode warp+doh"
-		"rm -rf mpv-config && git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
-		"mv -f mpv-config/* ~/.config/mpv/"
+#        "sudo systemctl enable warp-svc"
+#        "sudo systemctl start warp-svc"
+#        "warp-cli registration new"
+#        "warp-cli mode warp+doh"
+#        "rm -rf mpv-config && git clone --depth=1 https://github.com/noelsimbolon/mpv-config"
+#        "mkdir ~/.config/mpv"
+#        "mv -f mpv-config/* ~/.config/mpv/"
         "cp -rf fastfetch ~/.local/share/"
-        "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+        "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
         "echo \"fastfetch --config groups\" | tee -a ~/.zshrc"
-        "echo 'export LIBVA_DRIVER_NAME=iHD' >> ~/.zshrc"
-        "echo 'export VDPAU_DRIVER=va_gl' >> ~/.zshrc"
-        "echo 'export ANV_VIDEO_DECODE=1' >> ~/.zshrc"
+        "echo 'SSH_AUTH_SOCK=\$XDG_RUNTIME_DIR/gcr/ssh' | tee -a ~/.zshrc"
         "sudo systemctl enable --now fstrim.timer"
         "sudo chmod 4755 /usr/lib/polkit-1/polkit-agent-helper-1" #Fix for automatic authentication fail on polkit
+        "sudo systemctl --user enable --now gcr-ssh-agent.socket"
         "touch ~/.hushlogin"
+        "sudo ln -s ~/drives/Files /D:" #Allows me to share same browser profile folder across both OS.
+        "cp -rf powersave.sh /usr/local/bin/"
+        "cp -rf powersave-custom.service /etc/systemd/system/"
+        "sudo systemctl enable powersave-custom.service"
 #        "systemctl enable tlp.service"
         ########################################################
         "> Git config"
@@ -338,9 +309,7 @@ ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/
         "git config --global core.editor \"micro\""
         ########################################################
         "> Enable nvidia services"
-        "sudo systemctl enable nvidia-suspend.service"
-        "sudo systemctl enable nvidia-resume.service"
-        "sudo systemctl enable nvidia-hibernate.service"
+        "sudo systemctl enable nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service"
         "sudo systemctl disable nvidia-persistenced"
         "echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_TemporaryFilePath=/var/tmp' | sudo tee -a /etc/modprobe.d/nvi.conf"
@@ -348,14 +317,16 @@ ExecStartPost=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/
         "echo 'options nvidia NVreg_UsePageAttributeTable=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_InitializeSystemMemoryAllocations=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_RegistryDwords=RmEnableAggressiveVblank=1' | sudo tee -a /etc/modprobe.d/nvi.conf"
-        "echo 'options nvidia modeset=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "echo 'options nvidia NVreg_EnableNonblockingOpen=0' | sudo tee -a /etc/modprobe.d/nvi.conf"
         "sudo mv /usr/share/glvnd/egl_vendor.d/{10,90}_nvidia.json"
-        "echo '__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json' | sudo tee -a /etc/environment"
-        "echo \"$nvrules\" | sudo tee -a /etc/udev/rules.d/80-nvidia-pm.rules"
-        "echo \"$pwrserv\" | sudo tee -a /etc/systemd/system/nvidia-power-control.service > /dev/null"
+        "sed -n 'p' force_intel.sh > ~/.profile"
+        "sudo cp -rf nvrun /usr/local/bin/"
+        "sudo chmod +x /usr/local/bin/nvrun"
+        "sudo cp -rf 80-nvidia-pm.rules /etc/udev/rules.d/80-nvidia-pm.rules"
+        "sudo cp -rf nvidia-power-control.service /etc/systemd/system/nvidia-power-control.service"
         "sudo systemctl enable nvidia-power-control"
-        "echo \"$pwrconf\" | sudo tee -a /etc/systemd/system/nvidia-resume.service.d/restore-pm.conf > /dev/null"
+        "sudo mkdir /etc/systemd/system/nvidia-resume.service.d"
+        "sudo cp -rf restore-pm.conf /etc/systemd/system/nvidia-resume.service.d/restore-pm.conf"
         ########################################################
     )
 }
@@ -392,7 +363,7 @@ for command in "${commands[@]}"; do
             "-") # Execute directly
                 eval "${command:2}" ;; # Corrected eval for command extraction
             *) # Execute with ask()
-                ask "$command" && eval "$command" ;; # Corrected eval for command extraction
+                ask "$command" && echo " " && eval "$command" ;; # Corrected eval for command extraction
         esac
     fi
 done

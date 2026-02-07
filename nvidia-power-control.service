@@ -1,0 +1,10 @@
+[Unit]
+Description=Enable NVIDIA GPU runtime power management
+After=multi-user.target tlp.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'echo auto > /sys/bus/pci/devices/0000:01:00.0/power/control'
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux-cachyos-lts
+Target = booster
+Target = intel-ucode
+Target = systemd
+Target = nvidia-open-dkms
+Target = nvidia-utils
+
+[Action]
+Description = Generating UKI with Booster, Intel Microcode, and Ukify...
+When = PostTransaction
+Exec = /bin/sh -c '/usr/lib/systemd/ukify build --linux=/boot/vmlinuz-linux-cachyos-lts --initrd=/boot/intel-ucode.img --initrd=/boot/booster-linux-cachyos-lts.img --cmdline=@/etc/kernel/cmdline --output=/efi/EFI/Linux/arch-linux.efi && sbctl sign -s /efi/EFI/Linux/arch-linux.efi'

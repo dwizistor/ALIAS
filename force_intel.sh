@@ -1,0 +1,13 @@
+export DXVK_FILTER_DEVICE_NAME="Intel"
+export VKD3D_FILTER_DEVICE_NAME="Intel"
+export MESA_VK_DEVICE_SELECT="8086:a788"
+export __GLX_VENDOR_LIBRARY_NAME="mesa"
+export __NV_PRIME_RENDER_OFFLOAD="0"
+export __VK_LAYER_NV_optimus="non_NVIDIA_only"
+export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+export VK_DRIVER_FILES="/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+export LIBVA_DRIVER_NAME=iHD
+export VDPAU_DRIVER=va_gl
+export ANV_VIDEO_DECODE=1
+export __EGL_VENDOR_LIBRARY_FILENAMES="/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+export GSK_RENDERER=ngl
