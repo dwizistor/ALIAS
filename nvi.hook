@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = nvidia-open-dkms
+Target = nvidia-utils
+
+[Action]
+Description = Changing nvidia render priority...
+When = PostTransaction
+Exec = /bin/sh -c 'mv /usr/share/glvnd/egl_vendor.d/{10,90}_nvidia.json'
